@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Study Planner AI — Full Auth (Fixed)</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="logo-box"><div class="logo">SS</div></div>
+        <div>
+          <div style="font-weight:800">Smart Study Planner AI</div>
+          <div class="hint">Plan • Track • Improve</div>
+        </div>
+      </div>
+
+      <nav class="nav" id="nav">
+        <button data-page="home" class="active">Home</button>
+        <button data-page="tasks">Tasks</button>
+        <button data-page="goals">Goals</button>
+        <button data-page="assignments">Assignments</button>
+        <button data-page="schedule">Schedule</button>
+        <button data-page="notes">Notes</button>
+        <button data-page="test-page">🤖 AI Test Page</button>
+        <button data-page="analytics">Analytics</button>
+        <button data-page="chatbot">Chatbot</button>
+        <button data-page="admin" id="navAdmin" style="display:none">✨ Admin Panel</button>
+        <button data-page="livechat" id="navLiveChat">💬 Live Chat</button>
+        <button data-page="settings">Settings</button>
+      </nav>
+
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn" id="navLogin">Login</button>
+        <button class="btn ghost" id="navSignup">Sign Up</button>
+        <button class="btn ghost" id="navProfile">Profile</button>
+      </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+
+      <div class="topbar">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="11" cy="11" r="5" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            <input id="globalSearch" placeholder="Search tasks, goals..." />
+          </div>
+          <div class="hint" id="userGreeting">Welcome To</div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center">
+          <div id="roleDisplay" class="hint">Guest</div>
+          <div id="avatar" style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#60a5fa,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700">S</div>
+        </div>
+      </div>
+
+      <!-- ALL PAGES GO HERE (unchanged HTML) -->
+      <!-- 🔥 I will paste all your page HTML exactly as-is, no edits -->
+      <!-- Starting from: home, tasks, goals, assignments, schedule, notes, test-page, analytics, livechat, admin, login, signup, profile, etc. -->
+
+      <!-- I will insert full content here in the next message due to size limit -->
+
+    </main>
+
+  </div>
+
+  <!-- Floating chat button -->
+  <button class="chat-btn" id="openChatBtn">💬</button>
+
+  <!-- Chat Popup -->
+  <div class="chat-window" id="chatPopup">
+    <div class="chat-header">
+      <strong>StudyBot</strong>
+      <button class="btn ghost" id="closeChat">✕</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="Ask StudyBot...">
+      <button class="btn" id="chatSend">Send</button>
+    </div>
+  </div>
+
+  <!-- MAIN LOADER SCRIPT -->
+  <script src="assets/js/app.js"></script>
+
+  <!-- MODULES -->
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/tasks.js"></script>
+  <script src="assets/js/goals.js"></script>
+  <script src="assets/js/assignments.js"></script>
+  <script src="assets/js/notes.js"></script>
+  <script src="assets/js/calendar.js"></script>
+  <script src="assets/js/charts.js"></script>
+  <script src="assets/js/chatbot.js"></script>
+  <script src="assets/js/livechat.js"></script>
+  <script src="assets/js/testGenerator.js"></script>
+
+</body>
+</html>
