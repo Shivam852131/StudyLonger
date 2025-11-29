@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Study Planner AI — Full Auth (Fixed)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="logo-box">
+          <div class="logo">SS</div>
+        </div>
+        <div><div style="font-weight:800">Smart Study Planner AI</div><div class="hint">Plan • Track • Improve</div></div>
+      </div>
+
+      <nav class="nav" id="nav">
+        <button data-page="home" class="active"> Home</button>
+        <button data-page="tasks"> Tasks</button>
+        <button data-page="goals"> Goals</button>
+        <button data-page="assignments"> Assignments</button>
+        <button data-page="schedule"> Schedule</button>
+        <button data-page="notes"> Notes</button>
+        <button data-page="test-page"> 🤖 AI Test Page</button>
+        <button data-page="analytics"> Analytics</button>
+        <button data-page="chatbot"> Chatbot</button>
+        <button data-page="admin" id="navAdmin" style="display:none">✨ Admin Panel</button>
+        <button data-page="livechat" id="navLiveChat">💬 Live Chat</button>
+        <button data-page="settings"> Settings</button>
+        
+        
+
+
+      </nav>
+
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn" id="navLogin">Login</button>
+        <button class="btn ghost" id="navSignup">Sign Up</button>
+        <button class="btn ghost" id="navProfile">Profile</button>
+      </div>
+
+      <div style="margin-top:12px" class="hint"> </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="11" cy="11" r="5" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            <input id="globalSearch" placeholder="Search tasks, goals..." />
+          </div>
+          <div class="hint" id="userGreeting">Welcome To</div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center">
+          <div id="roleDisplay" class="hint">Guest</div>
+          <div id="avatar" style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#60a5fa,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700">S</div>
+        </div>
+      </div>
+
+      <section id="pages">
+        <div class="page card" id="livechat" style="display:none">
+  <h3>Live Chat</h3>
+
+  <div style="display:flex;gap:12px">
+
+    <div style="width:30%;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px">
+      <h4>Chats</h4>
+      <div id="chatUserList"></div>
+    </div>
+
+    <div style="flex:1;background:rgba(0,0,0,0.15);border-radius:8px;padding:12px;display:flex;flex-direction:column">
+      <div id="chatHeader" style="font-weight:700;margin-bottom:10px">Select a conversation</div>
+      <div id="chatMessages" style="height:300px;overflow:auto;background:rgba(255,255,255,0.05);padding:10px;border-radius:6px"></div>
+
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="chatInput" placeholder="Type message..." style="flex:1">
+        <button class="btn" id="sendChatBtn">Send</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+        <div class="card page" id="login" style="display:none;max-width:520px;margin:12px auto">
+          <h3>Login to your account</h3>
+          <input id="loginEmail" placeholder="Email" type="email">
+          <input id="loginPass" placeholder="Password" type="password">
+          <div style="margin-top:10px"><button class="btn" id="loginBtn">Login</button></div>
+          <div class="hint" style="margin-top:8px">New user? <a href="#" id="toSignup">Create an account</a></div>
+          <div class="hint" style="margin-top:8px"><a href="#" id="forgotPass">Forgot password?</a></div>
+          <div class="page card" id="admin" style="display:none">
+  <h3>Admin / Teacher Panel</h3>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+
+    <div class="card" style="min-width:320px">
+      <h4>Create Task for Students</h4>
+      <input id="adminTaskTitle" placeholder="Task title">
+      <input id="adminTaskSubject" placeholder="Subject">
+      <input id="adminTaskXp" type="number" placeholder="XP reward" value="10">
+      <label><input type="checkbox" id="adminAssignAll" checked> Assign to ALL students</label>
+      <button class="btn" id="adminAddTask">Create Task</button>
+    </div>
+
+    <div class="card" style="min-width:320px">
+      <h4>Create Assignment</h4>
+      <input id="adminAssignTitle" placeholder="Assignment title">
+      <input id="adminAssignDue" type="date">
+      <input id="adminAssignXp" type="number" placeholder="XP reward" value="30">
+      <label>Assign to student (optional): <select id="adminAssignTo"><option value="all">All Students</option></select></label>
+      <button class="btn" id="adminAddAssign">Create Assignment</button>
+    </div>
+
+    <div class="card" style="min-width:320px">
+      <h4>Students & XP</h4>
+      <div id="adminStudentsList" style="max-height:280px;overflow:auto"></div>
+    </div>
+
+    <div class="card" style="min-width:320px">
+      <h4>Your Created Items</h4>
+      <div id="adminCreatedList" style="max-height:280px;overflow:auto"></div>
+    </div>
+
+  </div>
+</div>
+
+        </div>
+
+        <div class="card page" id="signup" style="display:none;max-width:520px;margin:12px auto">
+          <h3>Create a new account</h3>
+          <input id="signupName" placeholder="Full Name" type="text">
+          <input id="signupEmail" placeholder="Email" type="email">
+          <input id="signupPass" placeholder="Password" type="password">
+          <input id="signupCollege" placeholder="College / Institution Name" type="text">
+          <select id="signupRoleClass" style="margin-top:8px">
+            <option value="">Select Student Role/Class</option>
+            <optgroup label="School">
+              <option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option>
+              <option>Class 5</option><option>Class 6</option><option>Class 7</option><option>Class 8</option>
+              <option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option>
+            </optgroup>
+            <optgroup label="B.Tech">
+              <option>B.Tech 1st Year</option><option>B.Tech 2nd Year</option>
+              <option>B.Tech 3rd Year</option><option>B.Tech 4th Year</option>
+            </optgroup>
+          </select>
+          <select id="signupRoleClass2" style="margin-top:8px">
+  <option>Student</option>
+  <option>Teacher</option>
+</select>
+          <input id="signupCode" placeholder="Invitation Code (if any)" type="text" style="margin-top:8px">
+          <div id="signupError" style="color:#ff3333;margin-top:8px"></div>
+          <div id="signupSuccess" style="color:#33ff33;margin-top:8px"></div>
+          <div class="hint" style="margin-top:8px">By signing up, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</div>
+        
+
+          <div style="margin-top:10px"><button class="btn" id="signupBtn">Sign Up</button></div>
+          <div class="hint" style="margin-top:8px">Already have an account? <a href="#" id="toLogin">Login here</a></div>
+        </div>
+
+        <div class="card page" id="profile" style="display:none;max-width:720px;margin:12px auto">
+          <h3>Profile <span id="adminBadge"></span></h3>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div id="profilePhoto" style="width:96px;height:96px;border-radius:12px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center">No Photo</div>
+            <div style="flex:1" class="profile-info">
+              <div><div style="font-weight:700">Name: <span id="profileName"></span></div><div class="hint">Email: <span id="profileEmail"></span></div></div>
+              <div><div class="hint">College/Inst: <strong id="profileCollege"></strong></div><div class="hint">Role/Class: <strong id="profileRoleClass"></strong></div></div>
+
+              <input id="photoFile" type="file" accept="image/*" style="margin-top:8px">
+              <button class="btn" id="uploadPhoto">Upload Photo</button>
+            </div>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:10px;">
+            <button class="btn" id="toSchedule">Go to Schedule 📅</button>
+            <button class="btn ghost" id="logoutBtn">Logout</button>
+          </div>
+        </div>
+
+        <div class="page" id="home">
+          <div class="grid">
+            <div class="card">
+              <h3>Welcome — Smart Study Planner AI</h3>
+              <p class="hint">AI-assisted planning, analytics, scheduler & chatbot — all in one.</p>
+            </div>
+
+            <div class="card">
+              <h3>Quick Add</h3>
+              <div style="margin-top:8px" class="task-form">
+                <input id="quickTitle" placeholder="Task title">
+                <select id="quickSubject">
+                  <option>General</option>
+                  <option>Math</option>
+                  <option>Physics</option>
+                  <option>CS</option>
+                  <option>COA</option>
+                  <option>DS</option>
+                  <option>HTML</option>
+                  <option>PYTHON</option>
+                  <option>C LANGUAGE</option>
+                </select>
+                <button class="btn" id="quickAddBtn">Add</button>
+              </div>
+            </div>
+
+            <div class="card" style="padding:14px;margin-bottom:10px">
+  <h3>⏳ Study Timer</h3>
+  <div id="timerDisplay" style="font-size:28px;font-weight:800;margin:10px 0">00:00:00</div>
+  <div style="display:flex;gap:10px">
+    <button class="btn" id="timerStart">Start</button>
+    <button class="btn ghost" id="timerPause">Pause</button>
+    <button class="btn ghost" id="timerReset">Reset</button>
+  </div>
+</div>
+
+            <div class="card">
+              <h3>Today's Snapshot</h3>
+              <canvas id="miniChart" style="height:120px"></canvas>
+            </div>
+            <div id="userLevelDisplay" style="font-size:20px;font-weight:700">
+  Level: 1 • XP: 0
+</div>
+
+
+            <div class="card" style="grid-column:span 3">
+              <h3>Weekly Highlights</h3>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+                <div style="flex:1;min-width:180px" class="card"><strong>Streak</strong><div class="hint" id="streak">0 days</div></div>
+                <div style="flex:1;min-width:180px" class="card"><strong>Top Subject</strong><div class="hint" id="topSub">—</div></div>
+                <div style="flex:1;min-width:180px" class="card"><strong>Focus Window</strong><div class="hint">Evenings</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+
+
+        <div class="page card" id="tasks" style="display:none">
+          <h3>Tasks</h3>
+          <div class="task-form">
+            <input id="taskTitle" placeholder="Task title">
+            <select id="taskSubject">
+              <option>General</option><option>COA</option><option>DS</option><option>CS</option><option>PYTHON</option><option>C LANGUAGE</option><option>UHVP</option>
+            </select>
+            <input id="taskDue" type="date">
+            <button class="btn" id="addTask">Add Task</button>
+          </div>
+          <div class="task-list" id="taskList"></div>
+        </div>
+
+        <div class="page card" id="goals" style="display:none">
+          <h3>Goals</h3>
+          <div class="task-form">
+            <input id="goalName" placeholder="Goal name">
+            <select id="goalSubject"><option>General</option><option>Math</option><option>Physics</option><option>CS</option><option>DS</option><option>COA</option><option>HTML</option><option>PYTHON</option></select>
+            <input id="goalDate" type="date">
+            <button class="btn" id="addGoal">Add</button>
+          </div>
+          <div id="goalList" style="margin-top:12px"></div>
+          <div style="margin-top:10px"><button class="btn" id="genGoals">AI Suggest Goals</button></div>
+        </div>
+
+        <div class="page card" id="assignments" style="display:none">
+          <h3>Assignments</h3>
+          <div class="task-form">
+            <input id="assignSubject" placeholder="Subject">
+            <input id="assignDue" type="date">
+            <input id="assignDesc" placeholder="Short description">
+            <button class="btn" id="addAssign">Add</button>
+          </div>
+          <div id="assignList" style="margin-top:12px"></div>
+        </div>
+
+        <div class="page card" id="schedule" style="display:none">
+          <h3>Weekly Schedule - Time Blocking</h3>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="hint"> Drag tasks from the Tasks list below, or click AI Suggest for a time-blocked study plan.</div>
+            <button class="btn" id="suggestTimes">AI Suggest Performance-Based Schedule</button>
+          </div>
+          <div class="calendar" id="calendar"></div>
+        </div>
+
+        <div class="page card" id="analytics" style="display:none">
+          <h3>Analytics</h3>
+          <div class="grid">
+            <div class="card"><h4>Study Hours (Weekly)</h4><canvas id="hoursChart" style="height:180px"></canvas></div>
+            <div class="card"><h4>Completion Rate</h4><canvas id="rateChart" style="height:180px"></canvas></div>
+            <div class="card"><h4>AI Insights</h4><div id="aiInsights" class="hint" style="margin-top:8px"></div></div>
+          </div>
+        </div>
+
+        <div class="page card" id="chatbot" style="display:none">
+          <h3>Chatbot</h3>
+          <p class="hint">Try: "Suggest a study plan for finals" or any knowledge question.</p>
+          <div class="chat-window" id="chatInline" style="display:flex;flex-direction:column;overflow:hidden">
+            <div class="chat-header"><strong>StudyBot</strong></div>
+            <div class="chat-body" id="chatBodyInline"></div>
+            <div class="chat-input">
+              <input id="chatInputInline" placeholder="Ask StudyBot...">
+              <button class="btn" id="chatSendInline">Send</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="page card" id="notes" style="display:none">
+          <h3>Notes Repository</h3>
+          <p class="hint">Search, upload and share notes.</p>
+
+          <div class="notes-controls">
+            <select id="noteClass" style="flex:1;min-width:160px">
+              <option value="">Select Class/Year</option>
+              <option>Class 1</option><option>Class 2</option>
+              <option>Class 3</option><option>Class 4</option>
+              <option>Class 5</option><option>Class 6</option>
+              <option>Class 7</option><option>Class 8</option>
+              <option>Class 9</option><option>Class 10</option>
+              <option>Class 11</option><option>Class 12</option>
+              <option>B.Tech 1st Year</option><option>B.Tech 2nd Year</option>
+              <option>B.Tech 3rd Year</option><option>B.Tech 4th Year</option>
+            </select>
+
+            <select id="noteSubject" style="flex:1;min-width:160px">
+              <option value="">Select Subject</option>
+              <option>Math</option><option>Physics</option><option>Chemistry</option>
+              <option>Biology</option><option>English</option>
+              <option>Computer Science</option>
+              <option>General</option>
+            </select>
+
+            <input id="searchNotes" placeholder="Search notes..." style="flex:1;min-width:200px" />
+          </div>
+
+          <div class="task-form" style="margin-top:12px">
+            <input id="noteTitle" placeholder="Note title" />
+            <textarea id="noteText" placeholder="Write your notes here..." rows="4"></textarea>
+            <input id="noteFile" type="file" accept="image/*,.pdf" />
+            <button class="btn" id="addNote">Upload Note</button>
+          </div>
+
+          <div id="notesList" style="margin-top:16px; display:flex; flex-direction:column; gap:12px"></div>
+        </div>
+
+        <div class="page" id="test-page" style="display:none">
+          <h2>🧠 AI Test Generator: Convert Notes to Questions</h2>
+          <p class="hint">Upload your notes/chapter, verify the important topics identified by the AI, and instantly generate a question-wise test.</p>
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+
+            <div class="card">
+              <h3>1. Upload/Paste Study Material</h3>
+              <div class="task-form" style="display:flex; flex-direction:column; gap:8px;">
+                <input id="testTitle" placeholder="Chapter/Unit Name (e.g., 'Thermodynamics')" />
+                <select id="testSubject">
+                  <option value="">Select Subject</option>
+                  <option>General</option>
+                  <option>Math</option>
+                  <option>Physics</option>
+                  <option>CS</option>
+                  <option>COA</option>
+                  <option>DS</option>
+                  <option>HTML</option>
+                  <option>PYTHON</option>
+                  <option>C LANGUAGE</option>
+                </select>
+                <textarea id="testText" placeholder="Paste your study notes here..." rows="6"></textarea>
+                <input id="testFile" type="file" accept="image/*,.pdf,.txt" />
+                <button class="btn" id="generateTestBtn">Analyze & Identify Important Topics</button>
+              </div>
+            </div>
+
+            <div class="card" id="verificationCard">
+              <h3>2. Verify Important Topics (User-AI Loop)</h3>
+              <p class="hint">AI identified **3** core topics. Click on any topic to **un-verify** it. Only verified topics will be used for question generation.</p>
+              <div id="aiTopics" style="margin-top:10px;">
+                <div class="topic-item-verify" data-topic-id="1">Topic: **The First Law of Thermodynamics** <button class="btn small" style="background:#5cb85c; padding: 4px 8px;">Verified</button></div>
+                <div class="topic-item-verify" data-topic-id="2">Topic: **Heat Engines and Refrigerators** <button class="btn small" style="background:#5cb85c; padding: 4px 8px;">Verified</button></div>
+                <div class="topic-item-verify" data-topic-id="3">Topic: **Entropy and the Second Law** <button class="btn small" style="background:#5cb85c; padding: 4px 8px;">Verified</button></div>
+                <p class="hint small" style="margin-top:10px;">*Sample topics shown. Click "Analyze" (Step 1) to load real topics.*</p>
+              </div>
+              <button class="btn" id="finalizeTopicsBtn" style="margin-top:12px;">Finalize Topics & Generate Questions</button>
+            </div>
+
+            <div class="card" style="grid-column: span 2;">
+              <h3>3. AI-Generated Test: Questions by Topic</h3>
+              <p class="hint">These **question-wise** problems cover the important topics you verified. Self-test and track your performance.</p>
+              <div id="testQuestions" style="margin-top:10px; max-height: 300px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                <p class="hint" style="text-align: center; padding: 10px;">Questions will appear here after topic analysis and verification.</p>
+              </div>
+            </div>
+
+            <div class="card" style="grid-column: span 2;">
+              <h3>4. Smart Study Planner Update</h3>
+              <p class="hint">The AI suggests an immediate **Revision Task** based on this test and tracks this material as a new **Study Resource**.</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding: 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.2);">
+                <strong>Suggested Task:</strong> **Revision: [Chapter Name] Test** (Suggested Time: 45 mins)
+                <button class="btn" id="addStudyTask">Add to Tasks & Schedule</button>
+              </div>
+              <p class="hint small" style="margin-top:8px;">*Successfully generating a test tracks it as a key resource. Use the <a href="#" onclick="showPage('analytics')">Analytics</a> tab to review performance on these topics.</p>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <div class="footer">Built with — B.TECHLY &nbsp;&nbsp; Owner — SHIVAM KUMAR JHA</div>
+    </main>
+  </div>
+
+  <button class="chat-btn" id="openChatBtn">💬</button>
+
+  <div class="chat-window" id="chatPopup">
+    <div class="chat-header">
+      <strong>StudyBot</strong>
+      <button class="btn ghost" id="closeChat">✕</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="Ask StudyBot...">
+      <button class="btn" id="chatSend">Send</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
