@@ -1,2881 +1,2773 @@
-/* ===== CSS VARIABLES ===== */
-:root {
-    /* Primary Colors */
-    --primary: #4f46e5;
-    --primary-dark: #3730a3;
-    --primary-light: #6366f1;
-    --secondary: #10b981;
-    --accent: #f59e0b;
-    --danger: #ef4444;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --info: #3b82f6;
+// ===== GLOBAL VARIABLES =====
+let currentUser = null;
+let appState = {
+    currentPage: 'dashboard',
+    isSidebarOpen: true,
+    isDarkMode: true,
+    tasks: [],
+    goals: [],
+    assignments: [],
+    notes: [],
+    chatHistory: [],
+    notifications: [],
+    // NEW: Study Rooms State
+    studyRooms: [],
+    challenges: [],
+    leaderboard: [],
+    studyBuddies: [],
+    focusTimer: {
+        isRunning: false,
+        timeLeft: 1500, // 25 minutes in seconds
+        duration: 1500,
+        participants: []
+    },
+    userPreferences: {
+        dailyGoal: 3,
+        focusMode: true,
+        breakReminders: true,
+        studyAnalytics: true,
+        emailNotifications: true,
+        pushNotifications: true,
+        soundEnabled: true
+    }
+};
+
+// ===== DOM ELEMENTS =====
+const elements = {
+    // Loading Screen
+    loadingScreen: document.getElementById('loadingScreen'),
     
-    /* Background Colors */
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-card: rgba(30, 41, 59, 0.8);
-    --bg-glass: rgba(255, 255, 255, 0.05);
-    --bg-hover: rgba(255, 255, 255, 0.1);
+    // Sidebar & Navigation
+    sidebar: document.getElementById('sidebar'),
+    mainContent: document.getElementById('mainContent'),
+    menuToggle: document.getElementById('menuToggle'),
+    navItems: document.querySelectorAll('.nav-item'),
+    pagesContainer: document.getElementById('pagesContainer'),
+    pages: document.querySelectorAll('.page'),
     
-    /* Text Colors */
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    // User Section
+    userAvatar: document.getElementById('userAvatar'),
+    userName: document.getElementById('userName'),
+    userRole: document.getElementById('userRole'),
+    userMenuBtn: document.getElementById('userMenuBtn'),
     
-    /* Border & Shadow */
-    --border: rgba(255, 255, 255, 0.1);
-    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    // Top Bar
+    globalSearch: document.getElementById('globalSearch'),
+    notificationBtn: document.getElementById('notificationBtn'),
+    themeToggle: document.getElementById('themeToggle'),
+    loginBtn: document.getElementById('loginBtn'),
     
-    /* Border Radius */
-    --radius: 12px;
-    --radius-sm: 8px;
-    --radius-lg: 16px;
+    // Modals
+    loginModal: document.getElementById('loginModal'),
+    closeLoginModal: document.getElementById('closeLoginModal'),
+    settingsModal: document.getElementById('settingsModal'),
+    closeSettingsModal: document.getElementById('closeSettingsModal'),
     
-    /* Transitions */
-    --transition: all 0.3s ease;
-    --transition-slow: all 0.5s ease;
-}
-
-/* ===== RESET & BASE STYLES ===== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: var(--text-primary);
-    min-height: 100vh;
-    overflow-x: hidden;
-}
-
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
-    z-index: -1;
-}
-
-/* ===== LOADING SCREEN ===== */
-.loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--bg-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity 0.5s ease;
-}
-
-.loading-screen.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.loader {
-    text-align: center;
-}
-
-.loader-text {
-    font-size: 2.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 2rem;
-}
-
-.loader-spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid transparent;
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* ===== APP CONTAINER ===== */
-.app-container {
-    display: flex;
-    min-height: 100vh;
-}
-
-/* ===== SIDEBAR ===== */
-.sidebar {
-    width: 280px;
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid var(--border);
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    height: 100vh;
-    z-index: 100;
-    transition: var(--transition-slow);
-    left: 0;
-}
-
-.sidebar.active {
-    left: -280px;
-}
-
-.logo-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 3rem;
-}
-
-.logo {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: white;
-    box-shadow: var(--shadow);
-}
-
-.logo-text h2 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.logo-text p {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-}
-
-/* Navigation */
-.nav {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.nav-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    border-radius: var(--radius);
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: var(--transition);
-    position: relative;
-}
-
-.nav-item:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-    transform: translateX(5px);
-}
-
-.nav-item.active {
-    background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent);
-    color: var(--text-primary);
-    border-left: 4px solid var(--primary);
-}
-
-.nav-item i {
-    font-size: 1.25rem;
-    width: 24px;
-}
-
-.nav-badge {
-    background: var(--primary);
-    color: white;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    margin-left: auto;
-}
-
-/* User Section */
-.user-section {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--bg-glass);
-    border-radius: var(--radius);
-    margin-top: auto;
-}
-
-.user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    color: white;
-    flex-shrink: 0;
-}
-
-.user-info {
-    flex: 1;
-}
-
-.user-info h4 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.user-info p {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.user-menu-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
-}
-
-.user-menu-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-/* ===== MAIN CONTENT ===== */
-.main-content {
-    flex: 1;
-    margin-left: 280px;
-    transition: var(--transition-slow);
-    display: flex;
-    flex-direction: column;
-}
-
-.main-content.expanded {
-    margin-left: 0;
-}
-
-/* Top Bar */
-.topbar {
-    padding: 1.5rem 2rem;
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 90;
-}
-
-.topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
-
-.menu-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
-}
-
-.menu-toggle:hover {
-    background: var(--bg-hover);
-}
-
-.search-box {
-    position: relative;
-    width: 400px;
-}
-
-.search-box i {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-}
-
-.search-box input {
-    width: 100%;
-    padding: 0.875rem 1rem 0.875rem 3rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    transition: var(--transition);
-}
-
-.search-box input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.notification-btn {
-    position: relative;
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    font-size: 1.25rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
-}
-
-.notification-btn:hover {
-    background: var(--bg-hover);
-}
-
-.notification-count {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: var(--danger);
-    color: white;
-    font-size: 0.75rem;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.theme-toggle {
-    background: var(--bg-secondary);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.theme-toggle:hover {
-    background: var(--bg-hover);
-}
-
-.login-btn {
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border: none;
-    border-radius: var(--radius);
-    color: white;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.login-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-}
-
-/* ===== PAGES CONTAINER ===== */
-.pages-container {
-    flex: 1;
-    padding: 2rem;
-}
-
-.page {
-    display: none;
-    animation: fadeIn 0.5s ease;
-}
-
-.page.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Page Header */
-.page-header {
-    margin-bottom: 2.5rem;
-}
-
-.page-title {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.page-subtitle {
-    color: var(--text-muted);
-    font-size: 1.125rem;
-}
-
-/* ===== DASHBOARD STYLES ===== */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-}
-
-.stat-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow);
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: linear-gradient(to bottom, var(--primary), var(--secondary));
-}
-
-.stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: var(--radius);
-    background: rgba(99, 102, 241, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: var(--primary);
-    margin-bottom: 1rem;
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
-}
-
-.stat-label {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-/* Quick Actions */
-.quick-actions {
-    margin-bottom: 2.5rem;
-}
-
-.section-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-}
-
-.actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-}
-
-.action-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.action-card:hover {
-    transform: translateY(-5px);
-    background: var(--bg-hover);
-    border-color: var(--primary);
-}
-
-.action-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: var(--radius);
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    margin: 0 auto 1rem;
-}
-
-.action-card h3 {
-    font-size: 1.125rem;
-    margin-bottom: 0.5rem;
-}
-
-.action-card p {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-/* Dashboard Grid */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-
-.card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: var(--transition);
-}
-
-.card:hover {
-    box-shadow: var(--shadow);
-}
-
-.deadline-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.deadline-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-glass);
-    border-radius: var(--radius-sm);
-}
-
-.deadline-info h4 {
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
-}
-
-.deadline-info p {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-.priority-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.priority-badge.high {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-}
-
-.priority-badge.medium {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fcd34d;
-}
-
-/* ===== STUDENT LIFE STYLES ===== */
-.student-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.5rem;
-}
-
-.tab-btn {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--radius);
-    font-weight: 500;
-    transition: var(--transition);
-}
-
-.tab-btn:hover {
-    background: var(--bg-hover);
-}
-
-.tab-btn.active {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.feature-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2rem;
-    text-align: center;
-    transition: var(--transition);
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow);
-}
-
-.feature-icon {
-    width: 70px;
-    height: 70px;
-    border-radius: var(--radius);
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: white;
-    margin: 0 auto 1.5rem;
-}
-
-.feature-card h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-}
-
-.feature-card p {
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-}
-
-/* ===== TASKS STYLES ===== */
-.task-input {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-}
-
-.task-input input,
-.task-input select {
-    flex: 1;
-    min-width: 200px;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.task-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    transition: var(--transition);
-}
-
-.task-item:hover {
-    background: var(--bg-hover);
-}
-
-.task-item.completed {
-    opacity: 0.6;
-    border-left: 4px solid var(--success);
-}
-
-.task-checkbox {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--primary);
-}
-
-.task-content {
-    flex: 1;
-}
-
-.task-content h4 {
-    margin-bottom: 0.5rem;
-}
-
-.task-meta {
-    display: flex;
-    gap: 1rem;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-/* ===== GOALS STYLES ===== */
-.goals-container {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
-}
-
-.goal-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.goal-form input,
-.goal-form textarea,
-.goal-form select {
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.goal-form textarea {
-    min-height: 120px;
-    resize: vertical;
-}
-
-.goals-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.goal-item {
-    padding: 1.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-
-/* ===== ASSIGNMENTS STYLES ===== */
-.assignments-container {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
-}
-
-.assignment-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.assignment-form input,
-.assignment-form textarea {
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.assignment-form textarea {
-    min-height: 120px;
-    resize: vertical;
-}
-
-.assignments-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.assignment-item {
-    padding: 1.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    border-left: 4px solid var(--warning);
-}
-
-/* ===== SCHEDULE STYLES ===== */
-.calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.calendar-header h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.calendar-controls {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.calendar-day {
-    min-height: 120px;
-    padding: 1rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-
-.calendar-day.today {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: var(--primary);
-}
-
-.calendar-event {
-    padding: 0.5rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border-radius: var(--radius-sm);
-    margin-top: 0.5rem;
-    font-size: 0.75rem;
-    color: white;
-}
-
-/* ===== NOTES STYLES ===== */
-.notes-editor {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-
-.notes-editor input,
-.notes-editor select,
-.notes-editor textarea {
-    width: 100%;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.notes-editor textarea {
-    min-height: 200px;
-    resize: vertical;
-}
-
-.notes-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.notes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.note-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: var(--transition);
-}
-
-.note-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow);
-}
-
-.note-card h4 {
-    margin-bottom: 0.5rem;
-}
-
-.note-card p {
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-}
-
-/* ===== TEST GENERATOR STYLES ===== */
-.test-generator-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.test-input {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.test-input select,
-.test-input textarea {
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.test-input textarea {
-    min-height: 300px;
-    resize: vertical;
-}
-
-.topics-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.topic-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-
-.test-questions {
-    margin-top: 2rem;
-}
-
-.question-card {
-    padding: 1.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 1rem;
-}
-
-/* ===== ANALYTICS STYLES ===== */
-.analytics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.insights-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-}
-
-.insight-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    text-align: center;
-}
-
-.insight-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: var(--radius);
-    background: rgba(99, 102, 241, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: var(--primary);
-    margin: 0 auto 1rem;
-}
-
-.insight-value {
-    font-size: 2rem;
-    font-weight: 800;
-    margin: 0.5rem 0;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-/* ===== CHATBOT STYLES ===== */
-.chatbot-container {
-    display: grid;
-    grid-template-columns: 250px 1fr;
-    gap: 2rem;
-    height: 600px;
-}
-
-.chat-history {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    overflow-y: auto;
-}
-
-.quick-questions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.quick-question {
-    padding: 0.75rem 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    text-align: left;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.quick-question:hover {
-    background: var(--bg-hover);
-}
-
-.chat-window {
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-}
-
-.chat-messages {
-    flex: 1;
-    padding: 1.5rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.message {
-    max-width: 70%;
-    padding: 1rem;
-    border-radius: var(--radius);
-}
-
-.message.user {
-    align-self: flex-end;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-}
-
-.message.bot {
-    align-self: flex-start;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.chat-input {
-    padding: 1rem;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 1rem;
-}
-
-.chat-input input {
-    flex: 1;
-    padding: 0.875rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-/* ===== LIVE CHAT STYLES ===== */
-.live-chat-container {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 2rem;
-    height: 600px;
-}
-
-.users-list {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    overflow-y: auto;
-}
-
-.user-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.user-item:hover,
-.user-item.active {
-    background: var(--bg-hover);
-}
-
-.online-status {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-left: auto;
-    background: var(--success);
-}
-
-.online-status.offline {
-    background: var(--text-muted);
-}
-
-.chat-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-card);
-}
-
-.chat-user {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-/* ===== STUDY ROOMS STYLES ===== */
-.study-rooms-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-}
-
-.study-rooms-tabs .tab-btn {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--radius);
-    font-weight: 500;
-    transition: var(--transition);
-    white-space: nowrap;
-}
-
-.study-rooms-tabs .tab-btn:hover {
-    background: var(--bg-hover);
-}
-
-.study-rooms-tabs .tab-btn.active {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-}
-
-.rooms-header,
-.challenges-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.rooms-header h3,
-.challenges-header h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.rooms-grid,
-.challenges-grid,
-.buddies-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.room-card,
-.challenge-card,
-.buddy-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: var(--transition);
-}
-
-.room-card:hover,
-.challenge-card:hover,
-.buddy-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow);
-    border-color: var(--primary);
-}
-
-.room-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.room-header h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-}
-
-.room-status {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.room-status.open {
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
-}
-
-.room-status.full {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-}
-
-.room-subject {
-    color: var(--text-muted);
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-}
-
-.room-meta {
-    display: flex;
-    gap: 1rem;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin-bottom: 1.5rem;
-}
-
-.room-meta span {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.room-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-/* Focus Timer */
-.focus-timer-section {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border);
-}
-
-.focus-timer-section h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1.5rem;
-}
-
-.focus-timer {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    text-align: center;
-}
-
-.timer-display {
-    font-size: 4rem;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 1.5rem;
-    font-family: 'Courier New', monospace;
-    text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.timer-controls {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-}
-
-.timer-controls .btn {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.timer-controls select {
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--radius);
-    color: white;
-    cursor: pointer;
-}
-
-.timer-controls select option {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-}
-
-.timer-participants {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.875rem;
-}
-
-/* Challenge Form */
-.challenge-form {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2rem;
-    margin-top: 2rem;
-}
-
-.challenge-form h4 {
-    font-size: 1.25rem;
-    margin-bottom: 1.5rem;
-    color: var(--text-primary);
-}
-
-.challenge-form input,
-.challenge-form textarea,
-.challenge-form select {
-    width: 100%;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-}
-
-.challenge-form textarea {
-    min-height: 100px;
-    resize: vertical;
-}
-
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-
-/* Leaderboard */
-.leaderboard-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2rem;
-}
-
-.leaderboard-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.5rem;
-}
-
-.leaderboard-tab {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--radius);
-    transition: var(--transition);
-    font-weight: 500;
-}
-
-.leaderboard-tab:hover {
-    background: var(--bg-hover);
-}
-
-.leaderboard-tab.active {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-}
-
-.leaderboard-list {
-    margin-bottom: 2rem;
-}
-
-.leaderboard-entry {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius);
-    margin-bottom: 0.5rem;
-    transition: var(--transition);
-}
-
-.leaderboard-entry:hover {
-    background: var(--bg-hover);
-}
-
-.rank {
-    font-size: 1.25rem;
-    font-weight: 700;
-    width: 40px;
-    color: var(--accent);
-}
-
-.leaderboard-entry .user-info {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.leaderboard-entry .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    color: white;
-}
-
-.leaderboard-entry h5 {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-
-.leaderboard-entry p {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.leaderboard-xp {
-    font-weight: 600;
-    color: var(--accent);
-}
-
-.your-position {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border);
-}
-
-.your-position h4 {
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-}
-
-.position-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius);
-    border-left: 4px solid var(--primary);
-}
-
-/* Study Buddies */
-.buddies-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.buddies-search {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.buddies-search input {
-    flex: 1;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.compatibility-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-}
-
-.compatibility-section h4 {
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-}
-
-.compatibility-filters {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.compatibility-filters select {
-    flex: 1;
-    padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.buddy-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.buddy-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    color: white;
-    font-size: 1.25rem;
-}
-
-.buddy-info {
-    flex: 1;
-}
-
-.buddy-info h5 {
-    margin-bottom: 0.25rem;
-}
-
-.buddy-info p {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-.compatibility-score {
-    font-size: 0.875rem;
-    padding: 0.25rem 0.75rem;
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
-    border-radius: 12px;
-    font-weight: 600;
-}
-
-.buddy-requests {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-}
-
-.buddy-requests h4 {
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-}
-
-.requests-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.request-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius);
-}
-
-.request-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.request-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-/* Empty States */
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: var(--text-muted);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.empty-state h4 {
-    margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-    margin-bottom: 1.5rem;
-}
-
-/* ===== PROFILE PAGE STYLES ===== */
-.profile-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.profile-header {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.profile-avatar-section {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-}
-
-.profile-avatar-large {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-    font-weight: 700;
-    color: white;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-}
-
-.profile-info h2 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    color: white;
-}
-
-.profile-info p {
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 1.5rem;
-}
-
-.profile-stats {
-    display: flex;
-    gap: 2rem;
-}
-
-.stat {
-    text-align: center;
-}
-
-.stat-value {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: white;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.profile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.profile-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    transition: var(--transition);
-}
-
-.profile-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-}
-
-.profile-card-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    font-size: 1.125rem;
-    color: var(--text-primary);
-}
-
-.profile-card-title i {
-    color: var(--primary);
-}
-
-.settings-list,
-.preferences-list,
-.connected-accounts {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.setting-item,
-.preference-item,
-.account-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
-}
-
-.setting-item:hover,
-.preference-item:hover,
-.account-item:hover {
-    background: var(--bg-hover);
-}
-
-.setting-item h4,
-.account-item h4 {
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
-}
-
-.setting-item p,
-.account-item p {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-}
-
-.preference-item {
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.preference-item:last-child {
-    border-bottom: none;
-}
-
-.preference-item span {
-    color: var(--text-primary);
-}
-
-.preference-select {
-    padding: 0.5rem 1rem;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-}
-
-/* Switch Toggle */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--bg-secondary);
-    transition: .4s;
-    border-radius: 34px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: var(--primary);
-}
-
-input:checked + .slider:before {
-    transform: translateX(26px);
-}
-
-/* Activity List */
-.activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.activity-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
-}
-
-.activity-item:hover {
-    background: var(--bg-hover);
-}
-
-.activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius);
-    background: rgba(79, 70, 229, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary);
-    font-size: 1rem;
-}
-
-.activity-content h4 {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-
-.activity-content p {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-/* Achievements */
-.achievements-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-}
-
-.achievement {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.achievement-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-}
-
-.achievement-icon.unlocked {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: white;
-}
-
-.achievement-icon.locked {
-    background: var(--bg-secondary);
-    color: var(--text-muted);
-}
-
-.achievement span {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    text-align: center;
-}
-
-/* Connected Accounts */
-.account-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.account-info i {
-    font-size: 1.5rem;
-    color: var(--primary);
-    width: 40px;
-    height: 40px;
-    background: var(--bg-glass);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ===== NOTIFICATION SYSTEM STYLES ===== */
-.notification-dropdown {
-    position: absolute;
-    top: 70px;
-    right: 2rem;
-    width: 400px;
-    max-height: 500px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    backdrop-filter: blur(20px);
-}
-
-.notification-dropdown.active {
-    display: flex;
-}
-
-.notification-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.notification-header h3 {
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.notification-header .btn {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-}
-
-.notification-list {
-    flex: 1;
-    overflow-y: auto;
-    max-height: 350px;
-}
-
-.notification-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    transition: var(--transition);
-    cursor: pointer;
-}
-
-.notification-item.unread {
-    background: rgba(79, 70, 229, 0.05);
-}
-
-.notification-item:hover {
-    background: var(--bg-hover);
-}
-
-.notification-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    flex-shrink: 0;
-}
-
-.notification-icon.reminder {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
-}
-
-.notification-icon.achievement {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-}
-
-.notification-icon.deadline {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-}
-
-.notification-icon.friend {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-}
-
-.notification-icon.system {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
-}
-
-.notification-content {
-    flex: 1;
-}
-
-.notification-content h4 {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-    color: var(--text-primary);
-}
-
-.notification-content p {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.25rem;
-}
-
-.notification-time {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-}
-
-.notification-action {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: var(--radius-sm);
-    opacity: 0;
-    transition: var(--transition);
-}
-
-.notification-item:hover .notification-action {
-    opacity: 1;
-}
-
-.notification-action:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.notification-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--border);
-    text-align: center;
-}
-
-.notification-footer a {
-    color: var(--primary);
-    text-decoration: none;
-    font-size: 0.875rem;
-}
-
-.notification-footer a:hover {
-    text-decoration: underline;
-}
-
-.empty-notifications {
-    padding: 3rem 1.5rem;
-    text-align: center;
-    color: var(--text-muted);
-}
-
-.empty-notifications i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-/* ===== ADMIN STYLES ===== */
-.admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.admin-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.students-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.student-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-glass);
-    border-radius: var(--radius);
-}
-
-/* ===== BUTTON STYLES ===== */
-.btn {
-    padding: 0.875rem 1.5rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border: none;
-    border-radius: var(--radius);
-    color: white;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-}
-
-.btn:active {
-    transform: translateY(0);
-}
-
-.btn-secondary {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-    background: var(--bg-hover);
-}
-
-/* ===== MODAL STYLES ===== */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-
-.modal.active {
-    display: flex;
-}
-
-.modal-content {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    border: 1px solid var(--border);
-    animation: slideInUp 0.4s ease;
-}
-
-@keyframes slideInUp {
-    from { transform: translateY(50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.close-modal {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.5rem;
-    cursor: pointer;
-}
-
-.close-modal:hover {
-    color: var(--text-primary);
-}
-
-/* Auth Styles */
-.auth-container {
-    position: relative;
-}
-
-.auth-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.auth-logo {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 800;
-    color: white;
-    margin: 0 auto 1.5rem;
-}
-
-.auth-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-}
-
-.auth-tab {
-    flex: 1;
-    padding: 1rem;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.auth-tab.active {
-    border-bottom-color: var(--primary);
-    color: var(--text-primary);
-}
-
-.auth-form {
-    display: none;
-}
-
-.auth-form.active {
-    display: block;
-}
-
-.form-group {
-    position: relative;
-    margin-bottom: 1.5rem;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-}
-
-.toggle-password {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-}
-
-.auth-divider {
-    display: flex;
-    align-items: center;
-    margin: 2rem 0;
-    color: var(--text-muted);
-}
-
-.auth-divider::before,
-.auth-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-}
-
-.auth-divider span {
-    padding: 0 1rem;
-}
-
-.social-auth {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.social-btn {
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.social-btn:hover {
-    background: var(--bg-hover);
-}
-
-.social-btn.google {
-    color: #DB4437;
-}
-
-.social-btn.github {
-    color: var(--text-primary);
-}
-
-/* Settings Modal Styles */
-.settings-container {
-    position: relative;
-}
-
-.settings-header {
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-.settings-header h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-}
-
-.settings-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.5rem;
-}
-
-.settings-tab {
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    font-size: 0.875rem;
-    transition: var(--transition);
-}
-
-.settings-tab:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.settings-tab.active {
-    background: var(--primary);
-    color: white;
-}
-
-.settings-content {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.settings-content h3 {
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-    color: var(--text-primary);
-}
-
-.settings-content .form-group {
-    margin-bottom: 1rem;
-}
-
-.settings-content .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-}
-
-.settings-content .form-group input[type="text"],
-.settings-content .form-group input[type="email"],
-.settings-content .form-group input[type="password"],
-.settings-content .form-group textarea,
-.settings-content .form-group select {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-}
-
-.settings-content .form-group textarea {
-    min-height: 100px;
-    resize: vertical;
-}
-
-.settings-content .form-group label.checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-}
-
-.settings-content .form-group label.checkbox input[type="checkbox"] {
-    width: auto;
-}
-
-.file-input {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-    cursor: pointer;
-    color: var(--text-secondary);
-}
-
-.file-input:hover {
-    border-color: var(--primary);
-}
-
-.settings-content small {
-    display: block;
-    margin-top: 0.25rem;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-}
-
-/* ===== CHATBOT WIDGET ===== */
-.chatbot-widget {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border-radius: 50%;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-    z-index: 100;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.chatbot-widget:hover {
-    transform: scale(1.1);
-    box-shadow: var(--shadow-lg);
-}
-
-/* ===== TOAST NOTIFICATION ===== */
-.toast {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.5rem;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    opacity: 0;
-    transition: all 0.3s ease;
-}
-
-.toast.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-}
-
-.toast-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.toast-content i {
-    color: var(--primary);
-    font-size: 1.25rem;
-}
-
-/* ===== PUSH NOTIFICATION BANNER ===== */
-.push-permission-banner {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    padding: 1rem 1.5rem;
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    animation: slideUp 0.5s ease;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateX(-50%) translateY(100%);
-        opacity: 0;
+    // Auth Elements
+    loginForm: document.getElementById('loginForm'),
+    signupForm: document.getElementById('signupForm'),
+    authTabs: document.querySelectorAll('.auth-tab'),
+    loginEmail: document.getElementById('loginEmail'),
+    loginPassword: document.getElementById('loginPassword'),
+    loginSubmitBtn: document.getElementById('loginSubmitBtn'),
+    signupName: document.getElementById('signupName'),
+    signupEmail: document.getElementById('signupEmail'),
+    signupPassword: document.getElementById('signupPassword'),
+    userRoleSelect: document.getElementById('userRoleSelect'),
+    signupSubmitBtn: document.getElementById('signupSubmitBtn'),
+    googleLogin: document.getElementById('googleLogin'),
+    githubLogin: document.getElementById('githubLogin'),
+    
+    // Dashboard Elements
+    studyTime: document.getElementById('studyTime'),
+    tasksCompleted: document.getElementById('tasksCompleted'),
+    xpPoints: document.getElementById('xpPoints'),
+    streakCount: document.getElementById('streakCount'),
+    actionCards: document.querySelectorAll('.action-card'),
+    deadlineList: document.getElementById('deadlineList'),
+    
+    // Student Life
+    tabBtns: document.querySelectorAll('.tab-btn'),
+    tabContents: document.querySelectorAll('.tab-content'),
+    
+    // Tasks
+    taskTitle: document.getElementById('taskTitle'),
+    taskPriority: document.getElementById('taskPriority'),
+    taskDue: document.getElementById('taskDue'),
+    addTaskBtn: document.getElementById('addTaskBtn'),
+    taskList: document.getElementById('taskList'),
+    
+    // Goals
+    goalTitle: document.getElementById('goalTitle'),
+    goalDescription: document.getElementById('goalDescription'),
+    goalDeadline: document.getElementById('goalDeadline'),
+    addGoalBtn: document.getElementById('addGoalBtn'),
+    goalsList: document.getElementById('goalsList'),
+    
+    // Assignments
+    assignmentTitle: document.getElementById('assignmentTitle'),
+    assignmentSubject: document.getElementById('assignmentSubject'),
+    assignmentDescription: document.getElementById('assignmentDescription'),
+    assignmentDue: document.getElementById('assignmentDue'),
+    addAssignmentBtn: document.getElementById('addAssignmentBtn'),
+    assignmentsList: document.getElementById('assignmentsList'),
+    
+    // Notes
+    noteTitle: document.getElementById('noteTitle'),
+    noteSubject: document.getElementById('noteSubject'),
+    noteContent: document.getElementById('noteContent'),
+    saveNoteBtn: document.getElementById('saveNoteBtn'),
+    notesGrid: document.getElementById('notesGrid'),
+    
+    // Test Generator
+    testSubject: document.getElementById('testSubject'),
+    studyMaterial: document.getElementById('studyMaterial'),
+    generateTopicsBtn: document.getElementById('generateTopicsBtn'),
+    topicsList: document.getElementById('topicsList'),
+    testQuestions: document.getElementById('testQuestions'),
+    
+    // Chatbot
+    chatMessages: document.getElementById('chatMessages'),
+    chatInput: document.getElementById('chatInput'),
+    sendMessageBtn: document.getElementById('sendMessageBtn'),
+    quickQuestions: document.querySelectorAll('.quick-question'),
+    
+    // Live Chat
+    liveChatMessages: document.getElementById('liveChatMessages'),
+    liveChatInput: document.getElementById('liveChatInput'),
+    sendLiveMessageBtn: document.getElementById('sendLiveMessageBtn'),
+    
+    // Profile Elements
+    profileName: document.getElementById('profileName'),
+    profileEmail: document.getElementById('profileEmail'),
+    profileLevel: document.getElementById('profileLevel'),
+    profileXP: document.getElementById('profileXP'),
+    profileStreak: document.getElementById('profileStreak'),
+    profileAvatar: document.getElementById('profileAvatar'),
+    profileAvatarText: document.getElementById('profileAvatarText'),
+    editProfileBtn: document.getElementById('editProfileBtn'),
+    dailyGoal: document.getElementById('dailyGoal'),
+    focusMode: document.getElementById('focusMode'),
+    breakReminders: document.getElementById('breakReminders'),
+    studyAnalytics: document.getElementById('studyAnalytics'),
+    activityList: document.getElementById('activityList'),
+    achievementsGrid: document.getElementById('achievementsGrid'),
+    disconnectGoogle: document.getElementById('disconnectGoogle'),
+    
+    // Settings
+    settingsContent: document.getElementById('settingsContent'),
+    settingsTabs: document.querySelectorAll('.settings-tab'),
+    
+    // Notification System
+    notificationDropdown: document.getElementById('notificationDropdown'),
+    notificationList: document.getElementById('notificationList'),
+    markAllRead: document.getElementById('markAllRead'),
+    
+    // Push Notifications
+    pushPermissionBanner: document.getElementById('pushPermissionBanner'),
+    enablePushBtn: document.getElementById('enablePushBtn'),
+    dismissPushBtn: document.getElementById('dismissPushBtn'),
+    
+    // Chatbot Widget
+    chatbotWidget: document.getElementById('chatbotWidget'),
+    
+    // Toast
+    notificationToast: document.getElementById('notificationToast'),
+    
+    // NEW: Study Rooms Elements
+    createRoomBtn: document.getElementById('createRoomBtn'),
+    roomsGrid: document.getElementById('roomsGrid'),
+    startTimer: document.getElementById('startTimer'),
+    pauseTimer: document.getElementById('pauseTimer'),
+    resetTimer: document.getElementById('resetTimer'),
+    timerDisplay: document.getElementById('timerDisplay'),
+    timerDuration: document.getElementById('timerDuration'),
+    participantsCount: document.getElementById('participantsCount'),
+    createChallengeBtn: document.getElementById('createChallengeBtn'),
+    challengesGrid: document.getElementById('challengesGrid'),
+    challengeForm: document.getElementById('challengeForm'),
+    challengeTitle: document.getElementById('challengeTitle'),
+    challengeDescription: document.getElementById('challengeDescription'),
+    challengeType: document.getElementById('challengeType'),
+    challengeGoal: document.getElementById('challengeGoal'),
+    challengeDeadline: document.getElementById('challengeDeadline'),
+    saveChallengeBtn: document.getElementById('saveChallengeBtn'),
+    cancelChallengeBtn: document.getElementById('cancelChallengeBtn'),
+    leaderboardList: document.getElementById('leaderboardList'),
+    findBuddies: document.getElementById('findBuddies'),
+    searchBuddiesBtn: document.getElementById('searchBuddiesBtn'),
+    subjectFilter: document.getElementById('subjectFilter'),
+    studyTimeFilter: document.getElementById('studyTimeFilter'),
+    findCompatibleBtn: document.getElementById('findCompatibleBtn'),
+    buddiesGrid: document.getElementById('buddiesGrid'),
+    requestsList: document.getElementById('requestsList'),
+    studyRoomsTabs: document.querySelectorAll('.study-rooms-tabs .tab-btn'),
+    leaderboardTabs: document.querySelectorAll('.leaderboard-tab')
+};
+
+// ===== NOTIFICATION SYSTEM =====
+class NotificationSystem {
+    constructor() {
+        this.notifications = [];
+        this.unreadCount = 0;
+        this.setupNotificationListeners();
+        this.loadNotifications();
+        this.startRealTimeUpdates();
     }
-    to {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
+
+    setupNotificationListeners() {
+        // Notification button click
+        elements.notificationBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleNotificationDropdown();
+        });
+
+        // Mark all as read
+        elements.markAllRead?.addEventListener('click', () => {
+            this.markAllAsRead();
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = elements.notificationDropdown;
+            if (dropdown && !dropdown.contains(e.target) && !elements.notificationBtn.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    }
+
+    toggleNotificationDropdown() {
+        const dropdown = elements.notificationDropdown;
+        dropdown.classList.toggle('active');
+        
+        if (dropdown.classList.contains('active')) {
+            this.loadNotifications();
+        }
+    }
+
+    startRealTimeUpdates() {
+        // Simulate real-time notifications
+        setInterval(() => {
+            if (Math.random() > 0.7) { // 30% chance every 30 seconds
+                this.generateRandomNotification();
+            }
+        }, 30000);
+
+        // Check for overdue tasks every minute
+        setInterval(() => {
+            this.checkOverdueTasks();
+        }, 60000);
+    }
+
+    generateRandomNotification() {
+        const notifications = [
+            {
+                id: Date.now(),
+                type: 'reminder',
+                title: 'Study Reminder',
+                message: 'You have a study session starting in 15 minutes!',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'medium'
+            },
+            {
+                id: Date.now() + 1,
+                type: 'achievement',
+                title: 'New Achievement!',
+                message: 'You earned the "Study Streak" badge!',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'low'
+            },
+            {
+                id: Date.now() + 2,
+                type: 'deadline',
+                title: 'Assignment Due Soon',
+                message: 'Math assignment is due in 2 hours',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'high'
+            },
+            {
+                id: Date.now() + 3,
+                type: 'friend',
+                title: 'Study Group Invitation',
+                message: 'Alex invited you to join a study group',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'medium'
+            }
+        ];
+
+        const randomNotif = notifications[Math.floor(Math.random() * notifications.length)];
+        this.addNotification(randomNotif);
+    }
+
+    loadNotifications() {
+        const saved = localStorage.getItem('studylonger_notifications');
+        this.notifications = saved ? JSON.parse(saved) : [];
+        this.updateNotificationCount();
+        this.renderNotifications();
+    }
+
+    saveNotifications() {
+        localStorage.setItem('studylonger_notifications', JSON.stringify(this.notifications));
+    }
+
+    addNotification(notification) {
+        // Add new notification
+        this.notifications.unshift(notification);
+        
+        // Keep only last 50 notifications
+        if (this.notifications.length > 50) {
+            this.notifications = this.notifications.slice(0, 50);
+        }
+
+        // Save to localStorage
+        this.saveNotifications();
+        
+        // Update UI
+        this.updateNotificationCount();
+
+        // Show toast for important notifications
+        if (notification.priority === 'high') {
+            showToast(notification.message, 'warning');
+        }
+
+        // If dropdown is open, refresh list
+        if (elements.notificationDropdown?.classList.contains('active')) {
+            this.renderNotifications();
+        }
+    }
+
+    renderNotifications() {
+        const notificationList = elements.notificationList;
+        if (!notificationList) return;
+
+        if (this.notifications.length === 0) {
+            notificationList.innerHTML = `
+                <div class="empty-notifications">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>No notifications yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        notificationList.innerHTML = this.notifications.map(notif => `
+            <div class="notification-item ${notif.read ? '' : 'unread'}" data-id="${notif.id}">
+                <div class="notification-icon ${notif.type}">
+                    <i class="${this.getNotificationIcon(notif.type)}"></i>
+                </div>
+                <div class="notification-content">
+                    <h4>${notif.title}</h4>
+                    <p>${notif.message}</p>
+                    <span class="notification-time">${this.formatTime(notif.timestamp)}</span>
+                </div>
+                <button class="notification-action" onclick="notificationSystem.markAsRead(${notif.id})">
+                    <i class="fas fa-check"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    getNotificationIcon(type) {
+        const icons = {
+            'reminder': 'fas fa-clock',
+            'achievement': 'fas fa-trophy',
+            'deadline': 'fas fa-exclamation-triangle',
+            'friend': 'fas fa-user-friends',
+            'system': 'fas fa-cog',
+            'message': 'fas fa-comment'
+        };
+        return icons[type] || 'fas fa-bell';
+    }
+
+    formatTime(timestamp) {
+        const now = new Date();
+        const time = new Date(timestamp);
+        const diffMs = now - time;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return time.toLocaleDateString();
+    }
+
+    markAsRead(id) {
+        const notification = this.notifications.find(n => n.id === id);
+        if (notification && !notification.read) {
+            notification.read = true;
+            this.updateNotificationCount();
+            this.saveNotifications();
+            
+            // Update UI
+            const item = document.querySelector(`.notification-item[data-id="${id}"]`);
+            if (item) {
+                item.classList.remove('unread');
+            }
+        }
+    }
+
+    markAllAsRead() {
+        this.notifications.forEach(notif => notif.read = true);
+        this.updateNotificationCount();
+        this.saveNotifications();
+        this.renderNotifications();
+    }
+
+    updateNotificationCount() {
+        this.unreadCount = this.notifications.filter(n => !n.read).length;
+        
+        // Update badge
+        const badge = document.querySelector('.notification-count');
+        if (badge) {
+            badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
+            badge.style.display = this.unreadCount > 0 ? 'flex' : 'none';
+        }
+        
+        // Update favicon badge (if supported)
+        if ('setAppBadge' in navigator && this.unreadCount > 0) {
+            navigator.setAppBadge(this.unreadCount);
+        } else if ('setAppBadge' in navigator && this.unreadCount === 0) {
+            navigator.clearAppBadge();
+        }
+    }
+
+    checkOverdueTasks() {
+        const now = new Date();
+        appState.tasks.forEach(task => {
+            if (!task.completed && task.due !== 'No deadline') {
+                const dueDate = new Date(task.due);
+                const hoursDiff = (dueDate - now) / (1000 * 60 * 60);
+                
+                if (hoursDiff <= 24 && hoursDiff > 0) {
+                    this.addNotification({
+                        id: Date.now(),
+                        type: 'deadline',
+                        title: 'Task Due Soon',
+                        message: `"${task.title}" is due in ${Math.ceil(hoursDiff)} hours`,
+                        timestamp: new Date().toISOString(),
+                        read: false,
+                        priority: 'high'
+                    });
+                }
+            }
+        });
+    }
+
+    sendStudyReminder() {
+        this.addNotification({
+            id: Date.now(),
+            type: 'reminder',
+            title: 'Study Time!',
+            message: 'Time to focus on your studies. You can do it! 💪',
+            timestamp: new Date().toISOString(),
+            read: false,
+            priority: 'medium'
+        });
     }
 }
 
-.push-permission-banner p {
-    color: white;
-    font-size: 0.875rem;
+// ===== PROFILE MANAGEMENT =====
+class ProfileManager {
+    constructor() {
+        this.userPreferences = appState.userPreferences;
+        this.setupProfileListeners();
+        this.loadUserData();
+    }
+
+    setupProfileListeners() {
+        // Edit profile button
+        elements.editProfileBtn?.addEventListener('click', () => {
+            this.openSettings('personal');
+        });
+
+        // Preference changes
+        elements.dailyGoal?.addEventListener('change', (e) => {
+            this.updatePreference('dailyGoal', parseInt(e.target.value));
+        });
+
+        elements.focusMode?.addEventListener('change', (e) => {
+            this.updatePreference('focusMode', e.target.checked);
+        });
+
+        elements.breakReminders?.addEventListener('change', (e) => {
+            this.updatePreference('breakReminders', e.target.checked);
+        });
+
+        elements.studyAnalytics?.addEventListener('change', (e) => {
+            this.updatePreference('studyAnalytics', e.target.checked);
+        });
+
+        // Settings modal
+        elements.closeSettingsModal?.addEventListener('click', () => {
+            this.closeSettings();
+        });
+
+        // Settings tabs
+        elements.settingsTabs?.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const tabId = e.target.getAttribute('data-tab');
+                this.switchSettingsTab(tabId);
+            });
+        });
+
+        // Disconnect Google
+        elements.disconnectGoogle?.addEventListener('click', () => {
+            if (confirm('Are you sure you want to disconnect Google account?')) {
+                showToast('Google account disconnected', 'info');
+            }
+        });
+
+        // Close modals on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === elements.settingsModal) {
+                this.closeSettings();
+            }
+        });
+    }
+
+    loadUserData() {
+        const savedUser = localStorage.getItem('studylonger_user');
+        const savedPrefs = localStorage.getItem('studylonger_preferences');
+        
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            this.updateProfileUI();
+        }
+        
+        if (savedPrefs) {
+            this.userPreferences = JSON.parse(savedPrefs);
+            appState.userPreferences = this.userPreferences;
+            this.updatePreferenceUI();
+        }
+    }
+
+    updateProfileUI() {
+        if (!currentUser) return;
+
+        // Update profile page
+        elements.profileName.textContent = currentUser.name || 'Guest User';
+        elements.profileEmail.textContent = currentUser.email || 'guest@studylonger.com';
+        elements.profileAvatarText.textContent = currentUser.name?.charAt(0).toUpperCase() || 'G';
+        elements.profileLevel.textContent = currentUser.level || 1;
+        elements.profileXP.textContent = currentUser.xp || 0;
+        elements.profileStreak.textContent = currentUser.streak || 0;
+    }
+
+    updatePreferenceUI() {
+        if (elements.dailyGoal) elements.dailyGoal.value = this.userPreferences.dailyGoal;
+        if (elements.focusMode) elements.focusMode.checked = this.userPreferences.focusMode;
+        if (elements.breakReminders) elements.breakReminders.checked = this.userPreferences.breakReminders;
+        if (elements.studyAnalytics) elements.studyAnalytics.checked = this.userPreferences.studyAnalytics;
+    }
+
+    updatePreference(key, value) {
+        this.userPreferences[key] = value;
+        appState.userPreferences = this.userPreferences;
+        localStorage.setItem('studylonger_preferences', JSON.stringify(this.userPreferences));
+        showToast('Preference updated successfully!', 'success');
+    }
+
+    openSettings(tab = 'personal') {
+        elements.settingsModal.classList.add('active');
+        this.switchSettingsTab(tab);
+        this.loadSettingsContent(tab);
+    }
+
+    closeSettings() {
+        elements.settingsModal.classList.remove('active');
+    }
+
+    switchSettingsTab(tabId) {
+        elements.settingsTabs?.forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.getAttribute('data-tab') === tabId) {
+                tab.classList.add('active');
+            }
+        });
+    }
+
+    loadSettingsContent(tab) {
+        const contentDiv = elements.settingsContent;
+        if (!contentDiv) return;
+        
+        const templates = {
+            personal: `
+                <h3>Personal Information</h3>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="settingsName" value="${currentUser?.name || ''}" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="settingsEmail" value="${currentUser?.email || ''}" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea id="settingsBio" placeholder="Tell us about yourself">${currentUser?.bio || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <input type="file" id="profilePicture" accept="image/*" class="file-input">
+                    <small>Upload a profile picture (JPG, PNG, max 2MB)</small>
+                </div>
+                <button class="btn" id="savePersonalInfo">Save Changes</button>
+            `,
+            security: `
+                <h3>Security Settings</h3>
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPassword" placeholder="Enter current password">
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter new password">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="twoFactorAuth">
+                        Enable Two-Factor Authentication
+                    </label>
+                </div>
+                <button class="btn" id="changePassword">Update Password</button>
+            `,
+            notifications: `
+                <h3>Notification Preferences</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="emailNotifs" ${this.userPreferences.emailNotifications ? 'checked' : ''}>
+                        Email Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="pushNotifs" ${this.userPreferences.pushNotifications ? 'checked' : ''}>
+                        Push Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="soundEnabled" ${this.userPreferences.soundEnabled ? 'checked' : ''}>
+                        Sound Alerts
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Study Reminders</label>
+                    <select id="reminderFrequency" class="preference-select">
+                        <option value="hourly">Every hour</option>
+                        <option value="daily" selected>Daily</option>
+                        <option value="weekly">Weekly</option>
+                    </select>
+                </div>
+                <button class="btn" id="saveNotificationSettings">Save Preferences</button>
+            `
+        };
+
+        contentDiv.innerHTML = templates[tab] || templates.personal;
+        
+        // Add event listeners to the new buttons
+        setTimeout(() => {
+            document.getElementById('savePersonalInfo')?.addEventListener('click', () => this.savePersonalInfo());
+            document.getElementById('changePassword')?.addEventListener('click', () => this.changePassword());
+            document.getElementById('saveNotificationSettings')?.addEventListener('click', () => this.saveNotificationSettings());
+        }, 100);
+    }
+
+    savePersonalInfo() {
+        const name = document.getElementById('settingsName')?.value.trim();
+        const email = document.getElementById('settingsEmail')?.value.trim();
+        const bio = document.getElementById('settingsBio')?.value.trim();
+
+        if (name && currentUser) {
+            currentUser.name = name;
+            currentUser.email = email;
+            currentUser.bio = bio;
+
+            localStorage.setItem('studylonger_user', JSON.stringify(currentUser));
+            this.updateProfileUI();
+            
+            // Update global UI
+            elements.userName.textContent = name;
+            elements.userAvatar.textContent = name.charAt(0).toUpperCase();
+            
+            showToast('Profile updated successfully!', 'success');
+            this.closeSettings();
+        }
+    }
+
+    changePassword() {
+        const currentPass = document.getElementById('currentPassword')?.value;
+        const newPass = document.getElementById('newPassword')?.value;
+        const confirmPass = document.getElementById('confirmPassword')?.value;
+
+        if (!currentPass || !newPass || !confirmPass) {
+            showToast('Please fill in all password fields', 'error');
+            return;
+        }
+
+        if (newPass !== confirmPass) {
+            showToast('New passwords do not match', 'error');
+            return;
+        }
+
+        if (newPass.length < 6) {
+            showToast('Password must be at least 6 characters', 'error');
+            return;
+        }
+
+        showToast('Password updated successfully!', 'success');
+        
+        // Clear fields
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+    }
+
+    saveNotificationSettings() {
+        const emailNotifs = document.getElementById('emailNotifs')?.checked || false;
+        const pushNotifs = document.getElementById('pushNotifs')?.checked || false;
+        const soundEnabled = document.getElementById('soundEnabled')?.checked || false;
+
+        this.userPreferences.emailNotifications = emailNotifs;
+        this.userPreferences.pushNotifications = pushNotifs;
+        this.userPreferences.soundEnabled = soundEnabled;
+
+        appState.userPreferences = this.userPreferences;
+        localStorage.setItem('studylonger_preferences', JSON.stringify(this.userPreferences));
+        showToast('Notification preferences saved!', 'success');
+        this.closeSettings();
+    }
 }
 
-.push-permission-banner .btn {
-    background: white;
-    color: var(--primary);
-    padding: 0.5rem 1rem;
+// ===== STUDY ROOMS MANAGER =====
+class StudyRoomsManager {
+    constructor() {
+        this.rooms = appState.studyRooms;
+        this.challenges = appState.challenges;
+        this.leaderboard = appState.leaderboard;
+        this.studyBuddies = appState.studyBuddies;
+        this.focusTimer = appState.focusTimer;
+        
+        this.setupStudyRoomsListeners();
+        this.loadStudyRoomsData();
+        this.initFocusTimer();
+        this.initSampleData();
+    }
+
+    setupStudyRoomsListeners() {
+        // Room creation
+        elements.createRoomBtn?.addEventListener('click', () => this.createRoom());
+        
+        // Challenge creation
+        elements.createChallengeBtn?.addEventListener('click', () => this.showChallengeForm());
+        elements.saveChallengeBtn?.addEventListener('click', () => this.createChallenge());
+        elements.cancelChallengeBtn?.addEventListener('click', () => this.hideChallengeForm());
+        
+        // Timer controls
+        elements.startTimer?.addEventListener('click', () => this.startFocusTimer());
+        elements.pauseTimer?.addEventListener('click', () => this.pauseFocusTimer());
+        elements.resetTimer?.addEventListener('click', () => this.resetFocusTimer());
+        elements.timerDuration?.addEventListener('change', (e) => this.setTimerDuration(e.target.value));
+        
+        // Study Rooms tabs
+        elements.studyRoomsTabs?.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const tabId = e.target.getAttribute('data-tab');
+                this.switchStudyRoomsTab(tabId);
+            });
+        });
+        
+        // Leaderboard tabs
+        elements.leaderboardTabs?.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const period = e.target.getAttribute('data-period');
+                this.switchLeaderboardPeriod(period);
+            });
+        });
+        
+        // Buddy search
+        elements.searchBuddiesBtn?.addEventListener('click', () => this.searchBuddies());
+        elements.findCompatibleBtn?.addEventListener('click', () => this.findCompatibleBuddies());
+        
+        // Quick join room
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.room-card .btn') && !e.target.closest('.room-actions .btn-secondary')) {
+                const roomCard = e.target.closest('.room-card');
+                if (roomCard) {
+                    const roomId = parseInt(roomCard.dataset.id);
+                    this.joinRoom(roomId);
+                }
+            }
+        });
+    }
+
+    initFocusTimer() {
+        // Update timer every second
+        setInterval(() => {
+            if (this.focusTimer.isRunning && this.focusTimer.timeLeft > 0) {
+                this.focusTimer.timeLeft--;
+                this.updateTimerDisplay();
+                
+                // Notify when timer ends
+                if (this.focusTimer.timeLeft === 0) {
+                    this.timerComplete();
+                }
+            }
+        }, 1000);
+    }
+
+    initSampleData() {
+        // Initialize with sample data if empty
+        if (this.rooms.length === 0) {
+            this.rooms = [
+                {
+                    id: 1,
+                    name: 'Math Study Group',
+                    subject: 'Calculus',
+                    participants: 3,
+                    maxParticipants: 6,
+                    duration: 90,
+                    isPublic: true,
+                    createdAt: '2024-03-10',
+                    createdBy: 'Alex Chen'
+                },
+                {
+                    id: 2,
+                    name: 'CS Revision',
+                    subject: 'Algorithms',
+                    participants: 2,
+                    maxParticipants: 4,
+                    duration: 60,
+                    isPublic: true,
+                    createdAt: '2024-03-11',
+                    createdBy: 'Maria Garcia'
+                },
+                {
+                    id: 3,
+                    name: 'Physics Lab Prep',
+                    subject: 'Physics',
+                    participants: 5,
+                    maxParticipants: 8,
+                    duration: 120,
+                    isPublic: true,
+                    createdAt: '2024-03-12',
+                    createdBy: 'John Doe'
+                }
+            ];
+            appState.studyRooms = this.rooms;
+            this.saveRooms();
+        }
+
+        if (this.challenges.length === 0) {
+            this.challenges = [
+                {
+                    id: 1,
+                    title: 'Weekend Study Marathon',
+                    description: 'Study for 8 hours over the weekend',
+                    type: 'study_time',
+                    goal: 480,
+                    deadline: '2024-03-17',
+                    participants: 12,
+                    createdBy: 'StudyLonger Team',
+                    createdAt: '2024-03-10'
+                },
+                {
+                    id: 2,
+                    title: 'Task Completion Challenge',
+                    description: 'Complete 15 tasks this week',
+                    type: 'tasks_completed',
+                    goal: 15,
+                    deadline: '2024-03-15',
+                    participants: 8,
+                    createdBy: 'Alex Johnson',
+                    createdAt: '2024-03-09'
+                }
+            ];
+            appState.challenges = this.challenges;
+            this.saveChallenges();
+        }
+
+        if (this.leaderboard.length === 0) {
+            this.generateLeaderboardData();
+        }
+    }
+
+    loadStudyRoomsData() {
+        const savedRooms = localStorage.getItem('studylonger_studyRooms');
+        const savedChallenges = localStorage.getItem('studylonger_challenges');
+        const savedLeaderboard = localStorage.getItem('studylonger_leaderboard');
+        
+        if (savedRooms) {
+            this.rooms = JSON.parse(savedRooms);
+            appState.studyRooms = this.rooms;
+        }
+        
+        if (savedChallenges) {
+            this.challenges = JSON.parse(savedChallenges);
+            appState.challenges = this.challenges;
+        }
+        
+        if (savedLeaderboard) {
+            this.leaderboard = JSON.parse(savedLeaderboard);
+            appState.leaderboard = this.leaderboard;
+        }
+        
+        this.renderRooms();
+        this.renderChallenges();
+        this.renderLeaderboard('weekly');
+    }
+
+    saveRooms() {
+        localStorage.setItem('studylonger_studyRooms', JSON.stringify(this.rooms));
+    }
+
+    saveChallenges() {
+        localStorage.setItem('studylonger_challenges', JSON.stringify(this.challenges));
+    }
+
+    saveLeaderboard() {
+        localStorage.setItem('studylonger_leaderboard', JSON.stringify(this.leaderboard));
+    }
+
+    createRoom() {
+        const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Computer Science', 'Biology', 'English', 'History', 'General'];
+        const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+        
+        const room = {
+            id: Date.now(),
+            name: `${randomSubject} Study Room ${this.rooms.length + 1}`,
+            subject: randomSubject,
+            participants: 1,
+            maxParticipants: Math.floor(Math.random() * 4) + 4, // 4-7 participants
+            duration: [30, 45, 60, 90, 120][Math.floor(Math.random() * 5)],
+            isPublic: true,
+            createdAt: new Date().toISOString(),
+            createdBy: currentUser?.name || 'Anonymous'
+        };
+        
+        this.rooms.unshift(room);
+        appState.studyRooms = this.rooms;
+        this.saveRooms();
+        this.renderRooms();
+        
+        showToast(`Created "${room.name}"`, 'success');
+        
+        // Add notification
+        if (notificationSystem) {
+            notificationSystem.addNotification({
+                id: Date.now(),
+                type: 'friend',
+                title: 'Study Room Created',
+                message: `"${room.name}" is now active. Invite friends to join!`,
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'medium'
+            });
+        }
+    }
+
+    joinRoom(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (room) {
+            if (room.participants >= room.maxParticipants) {
+                showToast('This room is full!', 'warning');
+                return;
+            }
+            
+            room.participants++;
+            this.saveRooms();
+            this.renderRooms();
+            
+            showToast(`Joined "${room.name}"`, 'success');
+            
+            // Update participants count in timer
+            if (elements.participantsCount) {
+                const currentCount = parseInt(elements.participantsCount.textContent) || 4;
+                elements.participantsCount.textContent = `${currentCount + 1} people studying together`;
+            }
+        }
+    }
+
+    inviteToRoom(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (room) {
+            showToast(`Invite link copied for "${room.name}"`, 'success');
+            // In a real app, you would generate and copy an invite link
+        }
+    }
+
+    createChallenge() {
+        const title = elements.challengeTitle.value.trim();
+        const description = elements.challengeDescription.value.trim();
+        const type = elements.challengeType.value;
+        const goal = parseInt(elements.challengeGoal.value);
+        const deadline = elements.challengeDeadline.value;
+        
+        if (!title || !goal || !deadline) {
+            showToast('Please fill in all required fields', 'warning');
+            return;
+        }
+        
+        const challenge = {
+            id: Date.now(),
+            title,
+            description,
+            type,
+            goal,
+            deadline,
+            participants: 0,
+            createdBy: currentUser?.name || 'Anonymous',
+            createdAt: new Date().toISOString()
+        };
+        
+        this.challenges.unshift(challenge);
+        appState.challenges = this.challenges;
+        this.saveChallenges();
+        this.renderChallenges();
+        this.hideChallengeForm();
+        
+        showToast('Challenge created successfully!', 'success');
+    }
+
+    joinChallenge(challengeId) {
+        const challenge = this.challenges.find(c => c.id === challengeId);
+        if (challenge) {
+            challenge.participants++;
+            this.saveChallenges();
+            this.renderChallenges();
+            
+            showToast(`Joined "${challenge.title}" challenge!`, 'success');
+        }
+    }
+
+    showChallengeForm() {
+        elements.challengeForm.style.display = 'block';
+        // Set default deadline to 7 days from now
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        elements.challengeDeadline.value = nextWeek.toISOString().split('T')[0];
+    }
+
+    hideChallengeForm() {
+        elements.challengeForm.style.display = 'none';
+        // Clear form
+        elements.challengeTitle.value = '';
+        elements.challengeDescription.value = '';
+        elements.challengeGoal.value = '';
+    }
+
+    startFocusTimer() {
+        this.focusTimer.isRunning = true;
+        showToast('Focus timer started! Good luck studying!', 'success');
+    }
+
+    pauseFocusTimer() {
+        this.focusTimer.isRunning = false;
+        showToast('Timer paused', 'info');
+    }
+
+    resetFocusTimer() {
+        const duration = parseInt(elements.timerDuration.value) * 60;
+        this.focusTimer.timeLeft = duration;
+        this.focusTimer.duration = duration;
+        this.focusTimer.isRunning = false;
+        this.updateTimerDisplay();
+        showToast('Timer reset', 'info');
+    }
+
+    setTimerDuration(minutes) {
+        if (!this.focusTimer.isRunning) {
+            this.focusTimer.duration = minutes * 60;
+            this.focusTimer.timeLeft = minutes * 60;
+            this.updateTimerDisplay();
+        }
+    }
+
+    updateTimerDisplay() {
+        if (!elements.timerDisplay) return;
+        
+        const minutes = Math.floor(this.focusTimer.timeLeft / 60);
+        const seconds = this.focusTimer.timeLeft % 60;
+        elements.timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Update progress color when time is running low
+        if (this.focusTimer.timeLeft < 300) { // Less than 5 minutes
+            elements.timerDisplay.style.color = '#f59e0b';
+        } else if (this.focusTimer.timeLeft < 60) { // Less than 1 minute
+            elements.timerDisplay.style.color = '#ef4444';
+        } else {
+            elements.timerDisplay.style.color = 'white';
+        }
+    }
+
+    timerComplete() {
+        this.focusTimer.isRunning = false;
+        showToast('Time\'s up! Take a 5-minute break! 🎉', 'success');
+        
+        // Add XP for completing a focus session
+        if (currentUser) {
+            currentUser.xp = (currentUser.xp || 0) + 25;
+            localStorage.setItem('studylonger_user', JSON.stringify(currentUser));
+            updateDashboard();
+        }
+        
+        // Play notification sound (if enabled)
+        if (appState.userPreferences.soundEnabled) {
+            // In a real app, you would play a sound here
+        }
+    }
+
+    switchStudyRoomsTab(tabId) {
+        // Update active tab button
+        elements.studyRoomsTabs?.forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.getAttribute('data-tab') === tabId) {
+                tab.classList.add('active');
+            }
+        });
+        
+        // Show corresponding tab content
+        document.querySelectorAll('#study-rooms .tab-content').forEach(content => {
+            content.classList.remove('active');
+            if (content.id === `${tabId}-tab`) {
+                content.classList.add('active');
+            }
+        });
+    }
+
+    switchLeaderboardPeriod(period) {
+        // Update active tab
+        elements.leaderboardTabs?.forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.getAttribute('data-period') === period) {
+                tab.classList.add('active');
+            }
+        });
+        
+        this.renderLeaderboard(period);
+    }
+
+    generateLeaderboardData() {
+        const names = ['Alex Chen', 'Maria Garcia', 'James Wilson', 'Sarah Johnson', 'David Lee', 
+                      'Emily Brown', 'Michael Davis', 'Jessica Miller', 'Daniel Martinez', 'Sophia Anderson'];
+        
+        this.leaderboard = names.map((name, index) => ({
+            id: index + 1,
+            name,
+            xp: 2000 - (index * 150) + Math.floor(Math.random() * 100),
+            studyHours: 50 - (index * 3) + Math.floor(Math.random() * 10),
+            rank: index + 1
+        }));
+        
+        appState.leaderboard = this.leaderboard;
+        this.saveLeaderboard();
+    }
+
+    searchBuddies() {
+        const query = elements.findBuddies.value.toLowerCase();
+        if (query.length < 2) {
+            showToast('Please enter at least 2 characters to search', 'warning');
+            return;
+        }
+        
+        // Simulate search results
+        const results = [
+            {
+                id: 1,
+                name: 'Alex Chen',
+                subjects: ['Mathematics', 'Physics'],
+                studyTime: 'evening',
+                compatibility: 92,
+                xp: 1850
+            },
+            {
+                id: 2,
+                name: 'Maria Garcia',
+                subjects: ['Computer Science', 'Mathematics'],
+                studyTime: 'afternoon',
+                compatibility: 87,
+                xp: 2100
+            }
+        ].filter(buddy => 
+            buddy.name.toLowerCase().includes(query) ||
+            buddy.subjects.some(subject => subject.toLowerCase().includes(query))
+        );
+        
+        this.renderBuddies(results);
+    }
+
+    findCompatibleBuddies() {
+        const subject = elements.subjectFilter.value;
+        const studyTime = elements.studyTimeFilter.value;
+        
+        // Simulate finding compatible study buddies
+        const compatibleBuddies = [
+            {
+                id: 1,
+                name: 'Alex Chen',
+                subjects: ['Mathematics', 'Physics'],
+                studyTime: 'evening',
+                compatibility: 92,
+                xp: 1850,
+                avatar: 'AC'
+            },
+            {
+                id: 2,
+                name: 'Maria Garcia',
+                subjects: ['Computer Science', 'Mathematics'],
+                studyTime: 'afternoon',
+                compatibility: 87,
+                xp: 2100,
+                avatar: 'MG'
+            },
+            {
+                id: 3,
+                name: 'James Wilson',
+                subjects: ['Physics', 'Chemistry'],
+                studyTime: 'morning',
+                compatibility: 78,
+                xp: 1450,
+                avatar: 'JW'
+            },
+            {
+                id: 4,
+                name: 'Sarah Johnson',
+                subjects: ['Biology', 'Chemistry'],
+                studyTime: 'evening',
+                compatibility: 85,
+                xp: 1950,
+                avatar: 'SJ'
+            }
+        ].filter(buddy => {
+            if (subject && !buddy.subjects.some(s => s.toLowerCase().includes(subject))) {
+                return false;
+            }
+            if (studyTime && buddy.studyTime !== studyTime) {
+                return false;
+            }
+            return true;
+        });
+        
+        this.renderCompatibleBuddies(compatibleBuddies);
+    }
+
+    renderRooms() {
+        if (!elements.roomsGrid) return;
+        
+        if (this.rooms.length === 0) {
+            elements.roomsGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h4>No active study rooms</h4>
+                    <p>Create a room to start studying with others!</p>
+                    <button class="btn" id="createFirstRoom">Create First Room</button>
+                </div>
+            `;
+            
+            document.getElementById('createFirstRoom')?.addEventListener('click', () => this.createRoom());
+            return;
+        }
+        
+        elements.roomsGrid.innerHTML = this.rooms.map(room => `
+            <div class="room-card" data-id="${room.id}">
+                <div class="room-header">
+                    <h4>${room.name}</h4>
+                    <span class="room-status ${room.participants >= room.maxParticipants ? 'full' : 'open'}">
+                        ${room.participants}/${room.maxParticipants}
+                    </span>
+                </div>
+                <p class="room-subject">${room.subject}</p>
+                <div class="room-meta">
+                    <span><i class="fas fa-clock"></i> ${room.duration} min</span>
+                    <span><i class="fas fa-user"></i> ${room.createdBy}</span>
+                </div>
+                <div class="room-actions">
+                    <button class="btn" ${room.participants >= room.maxParticipants ? 'disabled style="opacity: 0.5;"' : ''}>
+                        ${room.participants >= room.maxParticipants ? 'Full' : 'Join Room'}
+                    </button>
+                    <button class="btn btn-secondary" onclick="studyRoomsManager.inviteToRoom(${room.id})">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderChallenges() {
+        if (!elements.challengesGrid) return;
+        
+        if (this.challenges.length === 0) {
+            elements.challengesGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-trophy"></i>
+                    <h4>No active challenges</h4>
+                    <p>Create a challenge to compete with friends!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        elements.challengesGrid.innerHTML = this.challenges.map(challenge => {
+            const progress = Math.min(100, Math.floor(Math.random() * 100));
+            return `
+                <div class="challenge-card">
+                    <div class="room-header">
+                        <h4>${challenge.title}</h4>
+                        <span class="challenge-type">${challenge.type.replace('_', ' ')}</span>
+                    </div>
+                    <p>${challenge.description}</p>
+                    <div class="challenge-progress" style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Progress</span>
+                            <span>${progress}%</span>
+                        </div>
+                        <div class="progress-bar" style="height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+                            <div class="progress-fill" style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));"></div>
+                        </div>
+                    </div>
+                    <div class="room-meta">
+                        <span><i class="fas fa-users"></i> ${challenge.participants} participants</span>
+                        <span><i class="fas fa-calendar"></i> ${challenge.deadline}</span>
+                    </div>
+                    <button class="btn" onclick="studyRoomsManager.joinChallenge(${challenge.id})" style="margin-top: 1rem;">
+                        Join Challenge
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderLeaderboard(period = 'weekly') {
+        if (!elements.leaderboardList) return;
+        
+        const leaderboardData = this.leaderboard.slice(0, 10); // Top 10
+        
+        elements.leaderboardList.innerHTML = leaderboardData.map(entry => `
+            <div class="leaderboard-entry">
+                <span class="rank">#${entry.rank}</span>
+                <div class="user-info">
+                    <div class="avatar">${entry.name.split(' ').map(n => n[0]).join('')}</div>
+                    <div>
+                        <h5>${entry.name}</h5>
+                        <p>${entry.studyHours}h studied • ${period} ranking</p>
+                    </div>
+                </div>
+                <div class="leaderboard-xp">${entry.xp} XP</div>
+            </div>
+        `).join('');
+    }
+
+    renderBuddies(buddies) {
+        if (!elements.buddiesGrid) return;
+        
+        if (buddies.length === 0) {
+            elements.buddiesGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-user-friends"></i>
+                    <h4>No buddies found</h4>
+                    <p>Try different search terms or filters</p>
+                </div>
+            `;
+            return;
+        }
+        
+        elements.buddiesGrid.innerHTML = buddies.map(buddy => `
+            <div class="buddy-card">
+                <div class="buddy-avatar">${buddy.name.split(' ').map(n => n[0]).join('')}</div>
+                <div class="buddy-info">
+                    <h5>${buddy.name}</h5>
+                    <p>${buddy.subjects.join(', ')} • ${buddy.xp} XP</p>
+                </div>
+                <div class="compatibility-score">${buddy.compatibility}%</div>
+            </div>
+        `).join('');
+    }
+
+    renderCompatibleBuddies(buddies) {
+        if (!elements.buddiesGrid) return;
+        
+        if (buddies.length === 0) {
+            elements.buddiesGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-user-friends"></i>
+                    <h4>No compatible buddies found</h4>
+                    <p>Try different filters or check back later</p>
+                </div>
+            `;
+            return;
+        }
+        
+        elements.buddiesGrid.innerHTML = buddies.map(buddy => `
+            <div class="buddy-card">
+                <div class="buddy-avatar">${buddy.avatar}</div>
+                <div class="buddy-info">
+                    <h5>${buddy.name}</h5>
+                    <p>${buddy.subjects.join(', ')} • ${buddy.studyTime}</p>
+                </div>
+                <div class="compatibility-score">${buddy.compatibility}%</div>
+            </div>
+        `).join('');
+    }
 }
 
-.push-permission-banner .btn:hover {
-    transform: none;
-    box-shadow: none;
+// ===== GLOBAL INSTANCES =====
+let notificationSystem;
+let profileManager;
+let studyRoomsManager;
+
+// ===== INITIALIZATION =====
+function initApp() {
+    // Hide loading screen
+    setTimeout(() => {
+        elements.loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+            elements.loadingScreen.style.display = 'none';
+        }, 500);
+    }, 1500);
+    
+    // Check auth state
+    checkAuthState();
+    
+    // Initialize systems
+    notificationSystem = new NotificationSystem();
+    profileManager = new ProfileManager();
+    studyRoomsManager = new StudyRoomsManager();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Initialize charts
+    initCharts();
+    
+    // Load sample data
+    loadSampleData();
+    
+    // Set default date for inputs
+    setDefaultDates();
+    
+    // Start study reminders
+    startStudyReminders();
+    
+    // Check for push notification permission
+    checkPushPermission();
+    
+    console.log('StudyLonger initialized 🚀');
 }
 
-/* ===== FOOTER ===== */
-.footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid var(--border);
-    background: var(--bg-card);
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-.footer p {
-    margin-bottom: 0.5rem;
-}
-
-/* ===== UTILITY CLASSES ===== */
-.hidden {
-    display: none !important;
-}
-
-.text-gradient {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.glass {
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-dark);
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
-@media (max-width: 1200px) {
-    .sidebar {
-        width: 250px;
-    }
-    .main-content {
-        margin-left: 250px;
+// ===== AUTHENTICATION =====
+function checkAuthState() {
+    const savedUser = localStorage.getItem('studylonger_user');
+    
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        updateUIForLoggedIn(currentUser);
+    } else {
+        updateUIForLoggedOut();
     }
 }
 
-@media (max-width: 992px) {
-    .sidebar {
-        transform: translateX(-100%);
+function updateUIForLoggedIn(user) {
+    elements.userName.textContent = user.name || 'User';
+    elements.userRole.textContent = user.role || 'Student';
+    elements.userAvatar.textContent = user.name?.charAt(0).toUpperCase() || 'U';
+    elements.loginBtn.style.display = 'none';
+    
+    // Update profile UI if profile manager is initialized
+    if (profileManager) {
+        profileManager.updateProfileUI();
     }
-    .sidebar.active {
-        transform: translateX(0);
-    }
-    .main-content {
-        margin-left: 0;
-    }
-    .menu-toggle {
-        display: block;
-    }
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-    .analytics-grid {
-        grid-template-columns: 1fr;
-    }
-    .chatbot-container,
-    .live-chat-container {
-        grid-template-columns: 1fr;
-        height: auto;
-    }
-    .profile-grid {
-        grid-template-columns: 1fr;
-    }
-    .profile-header {
-        flex-direction: column;
-        gap: 1.5rem;
-        text-align: center;
-    }
-    .profile-avatar-section {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    .profile-stats {
-        justify-content: center;
-    }
-    .achievements-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .notification-dropdown {
-        position: fixed;
-        top: 60px;
-        right: 1rem;
-        left: 1rem;
-        width: auto;
-        max-height: 60vh;
-    }
-    .study-rooms-tabs {
-        flex-wrap: wrap;
-    }
-    .rooms-grid,
-    .challenges-grid,
-    .buddies-grid {
-        grid-template-columns: 1fr;
-    }
-    .compatibility-filters {
-        flex-direction: column;
+    
+    // Show admin nav if user is admin
+    if (user.role === 'admin') {
+        document.getElementById('admin-nav').classList.remove('hidden');
     }
 }
 
-@media (max-width: 768px) {
-    .pages-container {
-        padding: 1rem;
-    }
-    .topbar {
-        padding: 1rem;
-    }
-    .search-box {
-        width: 200px;
-    }
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    .actions-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    .goals-container,
-    .assignments-container {
-        grid-template-columns: 1fr;
-    }
-    .test-generator-container {
-        grid-template-columns: 1fr;
-    }
-    .social-auth {
-        grid-template-columns: 1fr;
-    }
-    .profile-avatar-large {
-        width: 80px;
-        height: 80px;
-        font-size: 2rem;
-    }
-    .profile-info h2 {
-        font-size: 1.5rem;
-    }
-    .profile-stats {
-        gap: 1rem;
-    }
-    .stat-value {
-        font-size: 1.25rem;
-    }
-    .achievements-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .settings-modal .modal-content {
-        width: 95%;
-        margin: 1rem;
-    }
-    .push-permission-banner {
-        width: 90%;
-        flex-direction: column;
-        text-align: center;
-        gap: 0.5rem;
-    }
-    .timer-display {
-        font-size: 3rem;
+function updateUIForLoggedOut() {
+    elements.userName.textContent = 'Guest User';
+    elements.userRole.textContent = 'Not logged in';
+    elements.userAvatar.textContent = 'G';
+    elements.loginBtn.style.display = 'flex';
+    document.getElementById('admin-nav').classList.add('hidden');
+}
+
+// ===== EVENT LISTENERS =====
+function setupEventListeners() {
+    // Menu toggle
+    elements.menuToggle.addEventListener('click', toggleSidebar);
+    
+    // Navigation
+    elements.navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageId = item.getAttribute('data-page');
+            switchPage(pageId);
+            
+            // Update active nav item
+            elements.navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+        });
+    });
+    
+    // Quick action cards
+    elements.actionCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const pageId = card.getAttribute('data-page');
+            switchPage(pageId);
+        });
+    });
+    
+    // Theme toggle
+    elements.themeToggle.addEventListener('click', toggleTheme);
+    
+    // Login button
+    elements.loginBtn.addEventListener('click', () => {
+        showModal(elements.loginModal);
+    });
+    
+    // Close modals
+    elements.closeLoginModal.addEventListener('click', () => {
+        hideModal(elements.loginModal);
+    });
+    
+    // Auth tabs
+    elements.authTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-tab');
+            switchAuthTab(tabId);
+        });
+    });
+    
+    // Login form
+    elements.loginSubmitBtn.addEventListener('click', handleLogin);
+    elements.loginPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+    
+    // Signup form
+    elements.signupSubmitBtn.addEventListener('click', handleSignup);
+    
+    // Social login
+    elements.googleLogin.addEventListener('click', handleGoogleLogin);
+    elements.githubLogin.addEventListener('click', handleGitHubLogin);
+    
+    // Student life tabs
+    elements.tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            switchStudentTab(tabId);
+        });
+    });
+    
+    // Tasks
+    elements.addTaskBtn.addEventListener('click', addTask);
+    
+    // Goals
+    elements.addGoalBtn.addEventListener('click', addGoal);
+    
+    // Assignments
+    elements.addAssignmentBtn.addEventListener('click', addAssignment);
+    
+    // Notes
+    elements.saveNoteBtn.addEventListener('click', saveNote);
+    
+    // Test Generator
+    elements.generateTopicsBtn.addEventListener('click', generateTopics);
+    
+    // Chatbot
+    elements.sendMessageBtn.addEventListener('click', sendChatMessage);
+    elements.chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
+    });
+    
+    // Quick questions
+    elements.quickQuestions.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const question = e.target.textContent;
+            sendQuickQuestion(question);
+        });
+    });
+    
+    // Live Chat
+    elements.sendLiveMessageBtn.addEventListener('click', sendLiveMessage);
+    elements.liveChatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendLiveMessage();
+    });
+    
+    // Chatbot widget
+    elements.chatbotWidget.addEventListener('click', () => {
+        switchPage('chatbot');
+    });
+    
+    // Global search
+    elements.globalSearch.addEventListener('input', handleSearch);
+    
+    // Close modals on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === elements.loginModal) {
+            hideModal(elements.loginModal);
+        }
+    });
+    
+    // Push notification buttons
+    elements.enablePushBtn?.addEventListener('click', requestPushPermission);
+    elements.dismissPushBtn?.addEventListener('click', () => {
+        elements.pushPermissionBanner.style.display = 'none';
+    });
+    
+    // Study Rooms page switch
+    elements.studyRoomsTabs?.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const tabId = e.target.getAttribute('data-tab');
+            switchStudyRoomsTab(tabId);
+        });
+    });
+}
+
+// ===== PAGE NAVIGATION =====
+function switchPage(pageId) {
+    // Hide all pages
+    elements.pages.forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    // Show selected page
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        appState.currentPage = pageId;
+        
+        // Update document title
+        document.title = `${pageId.charAt(0).toUpperCase() + pageId.slice(1).replace('-', ' ')} | StudyLonger`;
+        
+        // Close sidebar on mobile
+        if (window.innerWidth < 992) {
+            toggleSidebar();
+        }
+        
+        // Update profile page if needed
+        if (pageId === 'profile' && profileManager) {
+            profileManager.updateProfileUI();
+        }
+        
+        // Update study rooms page if needed
+        if (pageId === 'study-rooms' && studyRoomsManager) {
+            studyRoomsManager.renderRooms();
+            studyRoomsManager.renderChallenges();
+        }
     }
 }
 
-@media (max-width: 576px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    .actions-grid {
-        grid-template-columns: 1fr;
-    }
-    .task-input {
-        flex-direction: column;
-    }
-    .task-input input,
-    .task-input select {
-        width: 100%;
-    }
-    .rooms-header,
-    .challenges-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
-    .timer-controls {
-        flex-direction: column;
-    }
-    .timer-controls .btn {
-        width: 40px;
-        height: 40px;
+function switchStudyRoomsTab(tabId) {
+    if (studyRoomsManager) {
+        studyRoomsManager.switchStudyRoomsTab(tabId);
     }
 }
+
+function toggleSidebar() {
+    elements.sidebar.classList.toggle('active');
+    elements.mainContent.classList.toggle('expanded');
+    
+    // Update menu icon
+    const icon = elements.menuToggle.querySelector('i');
+    if (elements.sidebar.classList.contains('active')) {
+        icon.className = 'fas fa-times';
+    } else {
+        icon.className = 'fas fa-bars';
+    }
+}
+
+// ===== THEME TOGGLE =====
+function toggleTheme() {
+    appState.isDarkMode = !appState.isDarkMode;
+    const icon = elements.themeToggle.querySelector('i');
+    
+    if (appState.isDarkMode) {
+        document.documentElement.style.setProperty('--bg-primary', '#0f172a');
+        document.documentElement.style.setProperty('--bg-secondary', '#1e293b');
+        icon.className = 'fas fa-moon';
+    } else {
+        document.documentElement.style.setProperty('--bg-primary', '#f8fafc');
+        document.documentElement.style.setProperty('--bg-secondary', '#f1f5f9');
+        icon.className = 'fas fa-sun';
+    }
+    
+    localStorage.setItem('studylonger_theme', appState.isDarkMode ? 'dark' : 'light');
+}
+
+// ===== AUTH FUNCTIONS =====
+function switchAuthTab(tabId) {
+    // Update active tab
+    elements.authTabs.forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('data-tab') === tabId) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Show corresponding form
+    elements.loginForm.classList.remove('active');
+    elements.signupForm.classList.remove('active');
+    document.getElementById(`${tabId}Form`).classList.add('active');
+}
+
+async function handleLogin() {
+    const email = elements.loginEmail.value.trim();
+    const password = elements.loginPassword.value.trim();
+    
+    if (!email || !password) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+    
+    try {
+        // For demo purposes - in production, use Firebase Auth
+        const user = {
+            name: email.split('@')[0],
+            email: email,
+            role: 'student',
+            xp: 450,
+            level: 3,
+            streak: 7,
+            bio: 'Passionate student learning new things every day!'
+        };
+        
+        localStorage.setItem('studylonger_user', JSON.stringify(user));
+        currentUser = user;
+        
+        updateUIForLoggedIn(user);
+        hideModal(elements.loginModal);
+        showToast('Login successful!', 'success');
+        
+        // Update dashboard
+        updateDashboard();
+        
+        // Add login notification
+        if (notificationSystem) {
+            notificationSystem.addNotification({
+                id: Date.now(),
+                type: 'system',
+                title: 'Welcome Back!',
+                message: 'Great to see you again. Ready to study?',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'low'
+            });
+        }
+        
+    } catch (error) {
+        showToast('Login failed: ' + error.message, 'error');
+    }
+}
+
+async function handleSignup() {
+    const name = elements.signupName.value.trim();
+    const email = elements.signupEmail.value.trim();
+    const password = elements.signupPassword.value.trim();
+    const role = elements.userRoleSelect.value;
+    
+    if (!name || !email || !password) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+    
+    try {
+        const user = {
+            name: name,
+            email: email,
+            role: role,
+            xp: 0,
+            level: 1,
+            streak: 1,
+            bio: 'New student ready to learn!'
+        };
+        
+        localStorage.setItem('studylonger_user', JSON.stringify(user));
+        currentUser = user;
+        
+        updateUIForLoggedIn(user);
+        hideModal(elements.loginModal);
+        showToast('Account created successfully!', 'success');
+        
+        // Update dashboard
+        updateDashboard();
+        
+        // Add welcome notification
+        if (notificationSystem) {
+            notificationSystem.addNotification({
+                id: Date.now(),
+                type: 'system',
+                title: 'Welcome to StudyLonger!',
+                message: 'Get started by exploring all the features available to you.',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'low'
+            });
+        }
+        
+    } catch (error) {
+        showToast('Signup failed: ' + error.message, 'error');
+    }
+}
+
+async function handleGoogleLogin() {
+    try {
+        if (window.auth && window.googleProvider) {
+            const { signInWithPopup } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
+            const result = await signInWithPopup(window.auth, window.googleProvider);
+            const user = result.user;
+            
+            const userData = {
+                name: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                role: 'student',
+                xp: 0,
+                level: 1,
+                streak: 1,
+                bio: 'Google account user'
+            };
+            
+            localStorage.setItem('studylonger_user', JSON.stringify(userData));
+            currentUser = userData;
+            
+            updateUIForLoggedIn(userData);
+            hideModal(elements.loginModal);
+            showToast('Google login successful!', 'success');
+            
+            // Update dashboard
+            updateDashboard();
+            
+            // Add notification
+            if (notificationSystem) {
+                notificationSystem.addNotification({
+                    id: Date.now(),
+                    type: 'system',
+                    title: 'Google Account Connected',
+                    message: 'Your Google account has been successfully connected.',
+                    timestamp: new Date().toISOString(),
+                    read: false,
+                    priority: 'low'
+                });
+            }
+        }
+    } catch (error) {
+        showToast('Google login failed', 'error');
+    }
+}
+
+async function handleGitHubLogin() {
+    // GitHub login implementation
+    showToast('GitHub login coming soon!', 'info');
+}
+
+// ===== MODAL FUNCTIONS =====
+function showModal(modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideModal(modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+// ===== STUDENT LIFE TABS =====
+function switchStudentTab(tabId) {
+    // Update active tab button
+    elements.tabBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tabId) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Show corresponding tab content
+    elements.tabContents.forEach(content => {
+        content.classList.remove('active');
+        if (content.id === `${tabId}-tab`) {
+            content.classList.add('active');
+        }
+    });
+}
+
+// ===== TASK MANAGEMENT =====
+function addTask() {
+    const title = elements.taskTitle.value.trim();
+    const priority = elements.taskPriority.value;
+    const due = elements.taskDue.value;
+    
+    if (!title) {
+        showToast('Please enter a task title', 'warning');
+        return;
+    }
+    
+    const task = {
+        id: Date.now(),
+        title: title,
+        priority: priority,
+        due: due || 'No deadline',
+        completed: false,
+        createdAt: new Date().toISOString()
+    };
+    
+    appState.tasks.push(task);
+    renderTasks();
+    updateDashboard();
+    
+    // Clear form
+    elements.taskTitle.value = '';
+    elements.taskDue.value = '';
+    
+    showToast('Task added successfully!', 'success');
+    
+    // Add notification
+    if (notificationSystem) {
+        notificationSystem.addNotification({
+            id: Date.now(),
+            type: 'reminder',
+            title: 'New Task Added',
+            message: `"${title}" has been added to your task list`,
+            timestamp: new Date().toISOString(),
+            read: false,
+            priority: 'medium'
+        });
+    }
+}
+
+function renderTasks() {
+    if (!elements.taskList) return;
+    
+    elements.taskList.innerHTML = '';
+    
+    appState.tasks.forEach(task => {
+        const taskElement = document.createElement('div');
+        taskElement.className = `task-item ${task.completed ? 'completed' : ''}`;
+        taskElement.innerHTML = `
+            <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
+                onclick="toggleTaskCompletion(${task.id})">
+            <div class="task-content">
+                <h4>${task.title}</h4>
+                <div class="task-meta">
+                    <span>Priority: ${task.priority}</span>
+                    <span>Due: ${task.due}</span>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="deleteTask(${task.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        elements.taskList.appendChild(taskElement);
+    });
+}
+
+function toggleTaskCompletion(taskId) {
+    const task = appState.tasks.find(t => t.id === taskId);
+    if (task) {
+        task.completed = !task.completed;
+        renderTasks();
+        updateDashboard();
+        
+        if (task.completed) {
+            showToast('Task completed! +10 XP', 'success');
+            
+            // Add XP to user
+            if (currentUser) {
+                currentUser.xp = (currentUser.xp || 0) + 10;
+                localStorage.setItem('studylonger_user', JSON.stringify(currentUser));
+                updateDashboard();
+            }
+            
+            // Add notification
+            if (notificationSystem) {
+                notificationSystem.addNotification({
+                    id: Date.now(),
+                    type: 'achievement',
+                    title: 'Task Completed!',
+                    message: `You completed "${task.title}" and earned 10 XP!`,
+                    timestamp: new Date().toISOString(),
+                    read: false,
+                    priority: 'low'
+                });
+            }
+        }
+    }
+}
+
+function deleteTask(taskId) {
+    appState.tasks = appState.tasks.filter(t => t.id !== taskId);
+    renderTasks();
+    updateDashboard();
+    showToast('Task deleted', 'info');
+}
+
+// ===== GOAL MANAGEMENT =====
+function addGoal() {
+    const title = elements.goalTitle.value.trim();
+    const description = elements.goalDescription.value.trim();
+    const deadline = elements.goalDeadline.value;
+    
+    if (!title) {
+        showToast('Please enter a goal title', 'warning');
+        return;
+    }
+    
+    const goal = {
+        id: Date.now(),
+        title: title,
+        description: description,
+        deadline: deadline || 'No deadline',
+        progress: 0,
+        createdAt: new Date().toISOString()
+    };
+    
+    appState.goals.push(goal);
+    renderGoals();
+    
+    // Clear form
+    elements.goalTitle.value = '';
+    elements.goalDescription.value = '';
+    elements.goalDeadline.value = '';
+    
+    showToast('Goal added successfully!', 'success');
+}
+
+function renderGoals() {
+    if (!elements.goalsList) return;
+    
+    elements.goalsList.innerHTML = '';
+    
+    appState.goals.forEach(goal => {
+        const goalElement = document.createElement('div');
+        goalElement.className = 'goal-item';
+        goalElement.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <h4>${goal.title}</h4>
+                <span style="background: var(--primary); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem;">
+                    ${goal.progress}%
+                </span>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">${goal.description}</p>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${goal.progress}%"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                <span style="font-size: 0.875rem; color: var(--text-muted);">Deadline: ${goal.deadline}</span>
+                <button class="btn btn-secondary" onclick="updateGoalProgress(${goal.id})">
+                    <i class="fas fa-plus"></i> Update Progress
+                </button>
+            </div>
+        `;
+        elements.goalsList.appendChild(goalElement);
+    });
+}
+
+function updateGoalProgress(goalId) {
+    const goal = appState.goals.find(g => g.id === goalId);
+    if (goal) {
+        goal.progress = Math.min(100, goal.progress + 25);
+        renderGoals();
+        showToast('Goal progress updated!', 'success');
+        
+        if (goal.progress === 100) {
+            showToast('Goal completed! 🎉', 'success');
+            
+            // Add XP to user
+            if (currentUser) {
+                currentUser.xp = (currentUser.xp || 0) + 50;
+                localStorage.setItem('studylonger_user', JSON.stringify(currentUser));
+                updateDashboard();
+            }
+        }
+    }
+}
+
+// ===== ASSIGNMENT MANAGEMENT =====
+function addAssignment() {
+    const title = elements.assignmentTitle.value.trim();
+    const subject = elements.assignmentSubject.value.trim();
+    const description = elements.assignmentDescription.value.trim();
+    const due = elements.assignmentDue.value;
+    
+    if (!title || !subject) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const assignment = {
+        id: Date.now(),
+        title: title,
+        subject: subject,
+        description: description,
+        due: due || 'No deadline',
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    };
+    
+    appState.assignments.push(assignment);
+    renderAssignments();
+    
+    // Clear form
+    elements.assignmentTitle.value = '';
+    elements.assignmentSubject.value = '';
+    elements.assignmentDescription.value = '';
+    elements.assignmentDue.value = '';
+    
+    showToast('Assignment added successfully!', 'success');
+}
+
+function renderAssignments() {
+    if (!elements.assignmentsList) return;
+    
+    elements.assignmentsList.innerHTML = '';
+    
+    appState.assignments.forEach(assignment => {
+        const assignmentElement = document.createElement('div');
+        assignmentElement.className = 'assignment-item';
+        assignmentElement.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <div>
+                    <h4>${assignment.title}</h4>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">Subject: ${assignment.subject}</p>
+                </div>
+                <span style="background: var(--warning); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem;">
+                    ${assignment.status}
+                </span>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">${assignment.description}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.875rem; color: var(--text-muted);">Due: ${assignment.due}</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary" onclick="updateAssignmentStatus(${assignment.id})">
+                        <i class="fas fa-check"></i> Mark Complete
+                    </button>
+                    <button class="btn btn-secondary" onclick="deleteAssignment(${assignment.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        elements.assignmentsList.appendChild(assignmentElement);
+    });
+}
+
+function updateAssignmentStatus(assignmentId) {
+    const assignment = appState.assignments.find(a => a.id === assignmentId);
+    if (assignment) {
+        assignment.status = assignment.status === 'pending' ? 'completed' : 'pending';
+        renderAssignments();
+        showToast('Assignment status updated!', 'success');
+    }
+}
+
+function deleteAssignment(assignmentId) {
+    appState.assignments = appState.assignments.filter(a => a.id !== assignmentId);
+    renderAssignments();
+    showToast('Assignment deleted', 'info');
+}
+
+// ===== NOTES MANAGEMENT =====
+function saveNote() {
+    const title = elements.noteTitle.value.trim();
+    const subject = elements.noteSubject.value;
+    const content = elements.noteContent.value.trim();
+    
+    if (!title || !content) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const note = {
+        id: Date.now(),
+        title: title,
+        subject: subject,
+        content: content,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    appState.notes.push(note);
+    renderNotes();
+    
+    // Clear form
+    elements.noteTitle.value = '';
+    elements.noteContent.value = '';
+    
+    showToast('Note saved successfully!', 'success');
+}
+
+function renderNotes() {
+    if (!elements.notesGrid) return;
+    
+    elements.notesGrid.innerHTML = '';
+    
+    appState.notes.forEach(note => {
+        const noteElement = document.createElement('div');
+        noteElement.className = 'note-card';
+        noteElement.innerHTML = `
+            <h4>${note.title}</h4>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                Subject: ${note.subject}
+            </p>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                ${note.content.substring(0, 150)}${note.content.length > 150 ? '...' : ''}
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">
+                    ${new Date(note.createdAt).toLocaleDateString()}
+                </span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary" onclick="editNote(${note.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-secondary" onclick="deleteNote(${note.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        elements.notesGrid.appendChild(noteElement);
+    });
+}
+
+function editNote(noteId) {
+    const note = appState.notes.find(n => n.id === noteId);
+    if (note) {
+        elements.noteTitle.value = note.title;
+        elements.noteSubject.value = note.subject;
+        elements.noteContent.value = note.content;
+        showToast('Note loaded for editing', 'info');
+    }
+}
+
+function deleteNote(noteId) {
+    appState.notes = appState.notes.filter(n => n.id !== noteId);
+    renderNotes();
+    showToast('Note deleted', 'info');
+}
+
+// ===== TEST GENERATOR =====
+function generateTopics() {
+    const subject = elements.testSubject.value;
+    const material = elements.studyMaterial.value.trim();
+    
+    if (!subject || !material) {
+        showToast('Please select a subject and paste study material', 'warning');
+        return;
+    }
+    
+    // Simulate AI topic extraction
+    const topics = [
+        'Basic Concepts and Definitions',
+        'Fundamental Principles',
+        'Key Formulas and Equations',
+        'Problem-Solving Techniques',
+        'Real-World Applications'
+    ];
+    
+    renderTopics(topics);
+    showToast('Topics generated successfully!', 'success');
+}
+
+function renderTopics(topics) {
+    if (!elements.topicsList) return;
+    
+    elements.topicsList.innerHTML = '';
+    
+    topics.forEach((topic, index) => {
+        const topicElement = document.createElement('div');
+        topicElement.className = 'topic-item';
+        topicElement.innerHTML = `
+            <span>${index + 1}. ${topic}</span>
+            <input type="checkbox" checked>
+        `;
+        elements.topicsList.appendChild(topicElement);
+    });
+    
+    // Add generate questions button
+    const generateBtn = document.createElement('button');
+    generateBtn.className = 'btn';
+    generateBtn.innerHTML = '<i class="fas fa-question-circle"></i> Generate Questions';
+    generateBtn.onclick = generateQuestions;
+    elements.topicsList.appendChild(generateBtn);
+}
+
+function generateQuestions() {
+    const questions = [
+        {
+            question: 'Explain the fundamental concepts in your own words.',
+            type: 'essay'
+        },
+        {
+            question: 'What are the key formulas and when are they used?',
+            type: 'short-answer'
+        },
+        {
+            question: 'Solve a sample problem using the principles discussed.',
+            type: 'problem-solving'
+        }
+    ];
+    
+    renderQuestions(questions);
+    showToast('Questions generated successfully!', 'success');
+}
+
+function renderQuestions(questions) {
+    if (!elements.testQuestions) return;
+    
+    elements.testQuestions.innerHTML = '<h3>Generated Questions</h3>';
+    
+    questions.forEach((q, index) => {
+        const questionElement = document.createElement('div');
+        questionElement.className = 'question-card';
+        questionElement.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">Question ${index + 1}:</div>
+            <p style="margin-bottom: 1rem;">${q.question}</p>
+            <textarea placeholder="Your answer..." style="width: 100%; padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); min-height: 100px;"></textarea>
+        `;
+        elements.testQuestions.appendChild(questionElement);
+    });
+}
+
+// ===== CHATBOT =====
+function sendChatMessage() {
+    const message = elements.chatInput.value.trim();
+    if (!message) return;
+    
+    addChatMessage(message, 'user');
+    elements.chatInput.value = '';
+    
+    // Simulate AI response
+    setTimeout(() => {
+        const responses = [
+            "I can help you with study planning and academic questions.",
+            "Based on your study patterns, I recommend taking regular breaks.",
+            "Would you like me to explain any specific topic in detail?",
+            "Remember to review your notes regularly for better retention."
+        ];
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        addChatMessage(response, 'bot');
+    }, 1000);
+}
+
+function sendQuickQuestion(question) {
+    addChatMessage(question, 'user');
+    
+    // Simulate AI response
+    setTimeout(() => {
+        let response;
+        if (question.includes('calculus')) {
+            response = "Calculus derivatives measure rate of change. The power rule states: d/dx(xⁿ) = nxⁿ⁻¹.";
+        } else if (question.includes('physics')) {
+            response = "Newton's laws: 1. Inertia, 2. F=ma, 3. Action-reaction pairs.";
+        } else if (question.includes('tips')) {
+            response = "Study tips: Use Pomodoro technique (25 min focus, 5 min break), active recall, and spaced repetition.";
+        } else {
+            response = "I can help with that! Could you provide more specific details?";
+        }
+        addChatMessage(response, 'bot');
+    }, 1000);
+}
+
+function addChatMessage(text, sender) {
+    if (!elements.chatMessages) return;
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `message ${sender}`;
+    messageElement.innerHTML = `<p>${text}</p>`;
+    elements.chatMessages.appendChild(messageElement);
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    
+    // Save to chat history
+    appState.chatHistory.push({ text, sender, timestamp: new Date().toISOString() });
+}
+
+// ===== LIVE CHAT =====
+function sendLiveMessage() {
+    const message = elements.liveChatInput.value.trim();
+    if (!message) return;
+    
+    addLiveMessage(message, 'user');
+    elements.liveChatInput.value = '';
+    
+    // Simulate response from other user
+    setTimeout(() => {
+        const responses = [
+            "Thanks for the help! That makes sense now.",
+            "Could you explain that further?",
+            "Do you have any resources on this topic?",
+            "Let's schedule a study session to work on this together."
+        ];
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        addLiveMessage(response, 'bot');
+    }, 1500);
+}
+
+function addLiveMessage(text, sender) {
+    if (!elements.liveChatMessages) return;
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `message ${sender}`;
+    messageElement.innerHTML = `<p>${text}</p>`;
+    elements.liveChatMessages.appendChild(messageElement);
+    elements.liveChatMessages.scrollTop = elements.liveChatMessages.scrollHeight;
+}
+
+// ===== SEARCH FUNCTIONALITY =====
+function handleSearch() {
+    const query = elements.globalSearch.value.toLowerCase();
+    if (query.length > 2) {
+        // Search across all content
+        const results = [];
+        
+        // Search tasks
+        appState.tasks.forEach(task => {
+            if (task.title.toLowerCase().includes(query)) {
+                results.push({ type: 'task', item: task });
+            }
+        });
+        
+        // Search notes
+        appState.notes.forEach(note => {
+            if (note.title.toLowerCase().includes(query) || note.content.toLowerCase().includes(query)) {
+                results.push({ type: 'note', item: note });
+            }
+        });
+        
+        // You could show results in a dropdown or modal
+        console.log('Search results:', results);
+    }
+}
+
+// ===== DASHBOARD UPDATES =====
+function updateDashboard() {
+    // Update task count
+    const completedTasks = appState.tasks.filter(task => task.completed).length;
+    const totalTasks = appState.tasks.length;
+    if (elements.tasksCompleted) {
+        elements.tasksCompleted.textContent = `${completedTasks}/${totalTasks}`;
+    }
+    
+    // Update study time (simulated)
+    const studyHours = Math.floor(Math.random() * 4);
+    const studyMinutes = Math.floor(Math.random() * 60);
+    if (elements.studyTime) {
+        elements.studyTime.textContent = `${studyHours}h ${studyMinutes}m`;
+    }
+    
+    // Update XP
+    const xp = (currentUser?.xp || 0);
+    if (elements.xpPoints) {
+        elements.xpPoints.textContent = xp;
+    }
+    
+    // Update streak
+    const streak = currentUser?.streak || Math.floor(Math.random() * 10) + 1;
+    if (elements.streakCount) {
+        elements.streakCount.textContent = streak;
+    }
+}
+
+// ===== PUSH NOTIFICATIONS =====
+function checkPushPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        // Show permission banner after 5 seconds
+        setTimeout(() => {
+            if (elements.pushPermissionBanner) {
+                elements.pushPermissionBanner.style.display = 'flex';
+            }
+        }, 5000);
+    }
+}
+
+function requestPushPermission() {
+    if (!('Notification' in window)) {
+        showToast('Push notifications not supported in this browser', 'error');
+        return;
+    }
+    
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            showToast('Push notifications enabled!', 'success');
+            if (elements.pushPermissionBanner) {
+                elements.pushPermissionBanner.style.display = 'none';
+            }
+            
+            // Send welcome notification
+            if (notificationSystem) {
+                notificationSystem.addNotification({
+                    id: Date.now(),
+                    type: 'system',
+                    title: 'Push Notifications Enabled',
+                    message: 'You will now receive study reminders and updates directly.',
+                    timestamp: new Date().toISOString(),
+                    read: false,
+                    priority: 'low'
+                });
+            }
+        } else {
+            showToast('Push notifications blocked', 'info');
+        }
+    });
+}
+
+// ===== STUDY REMINDERS =====
+function startStudyReminders() {
+    // Send initial reminder
+    setTimeout(() => {
+        if (notificationSystem) {
+            notificationSystem.sendStudyReminder();
+        }
+    }, 5000);
+    
+    // Schedule daily reminders
+    const now = new Date();
+    const targetTime = new Date();
+    targetTime.setHours(10, 0, 0, 0); // 10:00 AM
+    
+    if (now > targetTime) {
+        targetTime.setDate(targetTime.getDate() + 1);
+    }
+    
+    const timeUntilReminder = targetTime - now;
+    
+    setTimeout(() => {
+        if (notificationSystem) {
+            notificationSystem.sendStudyReminder();
+        }
+        // Repeat every 24 hours
+        setInterval(() => {
+            if (notificationSystem) {
+                notificationSystem.sendStudyReminder();
+            }
+        }, 24 * 60 * 60 * 1000);
+    }, timeUntilReminder);
+}
+
+// ===== CHARTS INITIALIZATION =====
+function initCharts() {
+    // Progress Chart
+    const progressCtx = document.getElementById('progressChart')?.getContext('2d');
+    if (progressCtx) {
+        new Chart(progressCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Study Hours',
+                    data: [2, 3, 4, 2.5, 3.5, 1, 2],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+    
+    // Study Time Chart
+    const studyTimeCtx = document.getElementById('studyTimeChart')?.getContext('2d');
+    if (studyTimeCtx) {
+        new Chart(studyTimeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Math', 'Physics', 'CS', 'Other'],
+                datasets: [{
+                    data: [30, 25, 35, 10],
+                    backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6']
+                }]
+            }
+        });
+    }
+    
+    // Completion Chart
+    const completionCtx = document.getElementById('completionChart')?.getContext('2d');
+    if (completionCtx) {
+        new Chart(completionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Completion %',
+                    data: [65, 75, 85, 90],
+                    backgroundColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+}
+
+// ===== UTILITY FUNCTIONS =====
+function showToast(message, type = 'info') {
+    const toast = elements.notificationToast;
+    const toastMessage = toast.querySelector('.toast-message');
+    
+    if (!toast || !toastMessage) return;
+    
+    // Set message and type
+    toastMessage.textContent = message;
+    toast.className = 'toast';
+    toast.classList.add(type);
+    
+    // Show toast
+    toast.classList.add('show');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+function setDefaultDates() {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    // Format dates for input fields
+    const formatDate = (date) => date.toISOString().split('T')[0];
+    
+    // Set default dates
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        if (input.id === 'taskDue' || input.id === 'goalDeadline') {
+            input.value = formatDate(tomorrow);
+        } else if (input.id === 'assignmentDue') {
+            input.value = formatDate(nextWeek);
+        }
+    });
+}
+
+function loadSampleData() {
+    // Load sample tasks
+    appState.tasks = [
+        {
+            id: 1,
+            title: 'Complete Math Assignment',
+            priority: 'high',
+            due: '2024-03-12',
+            completed: true,
+            createdAt: '2024-03-10'
+        },
+        {
+            id: 2,
+            title: 'Read Physics Chapter 5',
+            priority: 'medium',
+            due: '2024-03-15',
+            completed: false,
+            createdAt: '2024-03-10'
+        }
+    ];
+    
+    // Load sample goals
+    appState.goals = [
+        {
+            id: 1,
+            title: 'Score 90% in Math Final',
+            description: 'Achieve high score in upcoming math examination',
+            deadline: '2024-04-30',
+            progress: 65,
+            createdAt: '2024-03-01'
+        }
+    ];
+    
+    // Load sample notes
+    appState.notes = [
+        {
+            id: 1,
+            title: 'Calculus Derivatives',
+            subject: 'Mathematics',
+            content: 'The derivative represents the rate of change of a function with respect to a variable. Basic rules include power rule, product rule, and chain rule.',
+            createdAt: '2024-03-10',
+            updatedAt: '2024-03-10'
+        }
+    ];
+    
+    // Load sample notifications
+    const savedNotifications = localStorage.getItem('studylonger_notifications');
+    if (!savedNotifications) {
+        appState.notifications = [
+            {
+                id: 1,
+                type: 'reminder',
+                title: 'Welcome to StudyLonger!',
+                message: 'Start your learning journey by exploring all the features.',
+                timestamp: new Date().toISOString(),
+                read: false,
+                priority: 'low'
+            },
+            {
+                id: 2,
+                type: 'deadline',
+                title: 'Math Assignment Due',
+                message: 'Complete your math assignment by tomorrow',
+                timestamp: new Date(Date.now() - 3600000).toISOString(),
+                read: false,
+                priority: 'high'
+            },
+            {
+                id: 3,
+                type: 'achievement',
+                title: 'First Task Completed!',
+                message: 'You completed your first task. Keep it up!',
+                timestamp: new Date(Date.now() - 7200000).toISOString(),
+                read: true,
+                priority: 'medium'
+            }
+        ];
+        localStorage.setItem('studylonger_notifications', JSON.stringify(appState.notifications));
+    }
+    
+    // Render loaded data
+    renderTasks();
+    renderGoals();
+    renderNotes();
+    updateDashboard();
+}
+
+// ===== INITIALIZE APP =====
+document.addEventListener('DOMContentLoaded', initApp);
+
+// ===== GLOBAL FUNCTIONS =====
+// Make functions available globally for inline event handlers
+window.toggleTaskCompletion = toggleTaskCompletion;
+window.deleteTask = deleteTask;
+window.updateGoalProgress = updateGoalProgress;
+window.updateAssignmentStatus = updateAssignmentStatus;
+window.deleteAssignment = deleteAssignment;
+window.editNote = editNote;
+window.deleteNote = deleteNote;
+window.switchPage = switchPage;
+window.showToast = showToast;
+window.openSetting = function(setting) {
+    if (profileManager) {
+        profileManager.openSettings(setting);
+    }
+};
+window.notificationSystem = notificationSystem;
+window.studyRoomsManager = studyRoomsManager;
