@@ -1,0 +1,2940 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>SmartStudy AI - advanced+ - flux</title>
+  <!-- Tailwind + Inter + Font Awesome + Chart.js 4.4 + Sortable -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="antialiased is-loading">
+
+  <!-- ===== GLOBAL XP DATA ===== -->
+  <div id="xp-global-data" data-xp="385" class="hidden"></div>
+
+  <!-- ===== ADVANCED LOADER (React rendered) ===== -->
+  <div id="app-loader" class="app-loader" role="status" aria-live="polite"></div>
+
+  <!-- ===== MODAL (replaces all prompts) ===== -->
+  <div id="advancedModal" class="modal-overlay" onclick="if(event.target===this) APP.closeModal()">
+    <div class="modal-container" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-5">
+        <h3 id="modalTitle" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">New Task</h3>
+        <i class="fas fa-times text-2xl text-gray-500 hover:text-gray-800 cursor-pointer" onclick="APP.closeModal()"></i>
+      </div>
+      <div id="modalFields" class="space-y-4"></div>
+      <div class="flex gap-3 mt-6">
+        <button id="modalConfirmBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition">Confirm</button>
+        <button onclick="APP.closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 py-3 rounded-xl font-semibold transition">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMMAND PALETTE ===== -->
+  <div id="commandPalette" class="command-overlay" onclick="if(event.target===this) APP.closeCommandPalette()">
+    <div class="command-panel glass-card" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 bg-white/70 dark:bg-gray-800/70 rounded-2xl px-4 py-3 border border-white/40">
+        <i class="fas fa-search text-indigo-500"></i>
+        <input id="command-input" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search tasks, notes, pages..." />
+        <span class="kbd">Ctrl+K</span>
+      </div>
+      <div id="command-results" class="mt-4 max-h-80 overflow-y-auto thin-scroll space-y-1"></div>
+      <p class="text-xs text-gray-500 mt-3">Tip: try "task", "note", "focus", "habit"</p>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP FLEX ===== -->
+  <div class="flex h-screen w-full overflow-hidden relative">
+
+    <!-- ========== SIDEBAR PREMIUM ========== -->
+    <aside class="w-80 bg-gradient-to-b from-[#0a0f1c] via-[#121b2f] to-[#0a0f1c] text-white flex flex-col shadow-2xl border-r border-white/5 dark:border-white/10">
+      <div class="p-7 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30">
+            <i class="fas fa-brain text-white text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Smart<span class="text-indigo-400">Study</span></h1>
+            <span class="text-[10px] uppercase tracking-wider text-gray-400 bg-white/10 px-2 py-0.5 rounded-full mt-1">AI - advanced v3</span>
+          </div>
+        </div>
+      </div>
+      <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto thin-scroll pb-6">
+        <a href="#" onclick="APP.showPage('welcome'); return false;" class="sidebar-item" id="nav-welcome"><i class="fas fa-rocket"></i><span>Welcome</span><span class="ml-auto bg-indigo-500/20 text-indigo-200 text-[10px] px-2 py-0.5 rounded-full">new</span></a>
+        <a href="#" onclick="APP.showPage('dashboard'); return false;" class="sidebar-item active-nav" id="nav-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+        <a href="#" onclick="APP.showPage('student-life'); return false;" class="sidebar-item" id="nav-student-life"><i class="fas fa-leaf"></i><span>Student Life</span><span class="ml-auto bg-green-500/20 text-green-200 text-[10px] px-2 py-0.5 rounded-full">wellness</span></a>
+        <a href="#" onclick="APP.showPage('tasks'); return false;" class="sidebar-item" id="nav-tasks"><i class="fas fa-check-circle"></i><span>Tasks</span><span class="ml-auto bg-indigo-500/20 text-indigo-200 text-[10px] px-2">+XP</span></a>
+        <a href="#" onclick="APP.showPage('assignments'); return false;" class="sidebar-item" id="nav-assignments"><i class="fas fa-book-open"></i><span>Assignments</span></a>
+        <a href="#" onclick="APP.showPage('schedule'); return false;" class="sidebar-item" id="nav-schedule"><i class="fas fa-calendar-alt"></i><span>Schedule</span></a>
+        <a href="#" onclick="APP.showPage('notes'); return false;" class="sidebar-item" id="nav-notes"><i class="fas fa-sticky-note"></i><span>Notes</span></a>
+        <a href="#" onclick="APP.showPage('focus'); return false;" class="sidebar-item" id="nav-focus"><i class="fas fa-bullseye"></i><span>Focus</span><span class="ml-auto bg-indigo-500/20 text-indigo-200 text-[10px] px-2">new</span></a>
+        <a href="#" onclick="APP.showPage('habits'); return false;" class="sidebar-item" id="nav-habits"><i class="fas fa-seedling"></i><span>Habits</span><span class="ml-auto bg-green-500/20 text-green-200 text-[10px] px-2">daily</span></a>
+        <!-- NEW: Flashcards -->
+        <a href="#" onclick="APP.showPage('flashcards'); return false;" class="sidebar-item" id="nav-flashcards"><i class="fas fa-layer-group"></i><span>Flashcards</span><span class="ml-auto bg-purple-500/30 text-purple-100 text-[10px] px-2">spaced</span></a>
+        <a href="#" onclick="APP.showPage('ai-test'); return false;" class="sidebar-item" id="nav-ai-test"><i class="fas fa-flask"></i><span>AI Test Gen</span><span class="ml-auto bg-purple-500/30 text-purple-100 text-[10px] px-2">smart</span></a>
+        <a href="#" onclick="APP.showPage('study-rooms'); return false;" class="sidebar-item" id="nav-study-rooms"><i class="fas fa-users"></i><span>Study Rooms</span><span class="ml-auto bg-blue-500/30 text-blue-100 text-[10px] px-2">live</span></a>
+        <a href="#" onclick="APP.showPage('chatbot'); return false;" class="sidebar-item" id="nav-chatbot"><i class="fas fa-robot"></i><span>AI Tutor</span><span class="ml-auto bg-indigo-400 text-white text-[10px] px-2 py-0.5 rounded-full">GPT-4</span></a>
+        <a href="#" onclick="APP.showPage('analytics'); return false;" class="sidebar-item" id="nav-analytics"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
+        <a href="#" onclick="APP.showPage('achievements'); return false;" class="sidebar-item" id="nav-achievements"><i class="fas fa-trophy"></i><span>Achievements</span></a>
+        <a href="#" onclick="APP.showPage('profile'); return false;" class="sidebar-item" id="nav-profile"><i class="fas fa-user"></i><span>Profile</span></a>
+        <!-- NEW: Courses page -->
+        <a href="#" onclick="APP.showPage('courses'); return false;" class="sidebar-item" id="nav-courses"><i class="fas fa-book-open"></i><span>Courses</span><span class="ml-auto bg-indigo-500/20 text-indigo-200 text-[10px] px-2">new</span></a>
+        <div class="border-t border-white/10 my-4"></div>
+        <a href="#" onclick="APP.showPage('signin'); return false;" class="sidebar-item" id="nav-signin"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+        <a href="#" onclick="APP.showPage('signup'); return false;" class="sidebar-item" id="nav-signup"><i class="fas fa-user-plus"></i><span>Sign Up</span></a>
+        <a href="#" onclick="APP.signOut(); return false;" class="sidebar-item hidden" id="nav-signout"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></a>
+      </nav>
+      <div class="p-5 m-3 mb-5 bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center ring-2 ring-white/30 shadow-lg">
+              <span id="user-initials" class="text-white font-bold text-lg">JD</span>
+            </div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-gray-900 rounded-full"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold flex items-center text-white truncate"><span id="user-display-name">Jamie Doe</span><i class="fas fa-crown ml-1.5 text-yellow-300 text-[11px]"></i></p>
+            <div class="flex items-center text-xs mt-1">
+              <span class="bg-indigo-500/20 text-indigo-100 px-2 py-0.5 rounded-full flex items-center"><i class="fas fa-star text-yellow-300 mr-1 text-[10px]"></i> Lv.<span class="user-level-display font-bold text-white">4</span></span>
+              <span class="ml-2 bg-white/10 px-2 py-0.5 rounded-full flex items-center text-gray-200"><span class="global-xp-value">385</span> XP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========== RIGHT PANEL ========== -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-transparent">
+      <header class="glass-panel mx-5 mt-5 px-6 py-3 rounded-2xl flex items-center justify-between border-b border-white/20 shadow-sm">
+        <div class="flex items-center gap-4">
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white" id="current-page-title">Dashboard</h2>
+          <span id="global-live-sync-badge" class="bg-green-100/80 text-green-800 dark:bg-green-800/30 dark:text-green-200 text-xs px-3 py-1.5 rounded-full flex items-center backdrop-blur-sm"><i id="global-live-dot" class="fas fa-circle text-[6px] mr-1.5 text-green-500 animate-pulse"></i><span id="global-live-label">live sync</span></span>
+        </div>
+        <div class="flex items-center gap-5">
+          <!-- theme toggle -->
+          <div class="theme-toggle w-12 h-6 flex items-center p-1" onclick="APP.toggleDarkMode()">
+            <div class="w-4 h-4 bg-indigo-600 rounded-full shadow-md transform transition-transform dark:translate-x-6"></div>
+          </div>
+          <!-- XP preview with daily goal -->
+          <div class="flex items-center gap-3 bg-white/40 dark:bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+            <div class="flex items-center gap-1"><i class="fas fa-bolt text-amber-500 text-xs"></i><span class="text-sm font-medium dark:text-white">Lv.<span class="user-level-display">4</span></span></div>
+            <div class="w-32 bg-gray-200/70 rounded-full h-2.5 overflow-hidden"><div class="xp-progress-fill h-2.5 rounded-full" style="width: 70%;"></div></div>
+            <span class="text-xs text-gray-700 dark:text-gray-300 xp-text-detail font-mono">135 / 250 XP</span>
+          </div>
+          <!-- Daily goal progress -->
+          <div class="flex items-center gap-2 text-sm bg-white/40 dark:bg-black/30 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm">
+            <i class="fas fa-flag-checkered text-indigo-500"></i>
+            <span id="daily-goal-display" class="font-mono font-medium dark:text-white">0/100</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm bg-white/40 dark:bg-black/30 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm"><i class="fas fa-clock text-indigo-500"></i><span id="realtime-clock" class="font-mono font-medium dark:text-white">15:42:23</span></div>
+          <div class="relative"><i class="fas fa-bell text-gray-700 dark:text-gray-300 hover:text-indigo-600 cursor-pointer text-xl transition-all"></i><span class="absolute -top-0.5 -right-1 h-2.5 w-2.5 bg-red-500 border-2 border-white rounded-full"></span></div>
+        </div>
+      </header>
+
+      <main id="main-content" class="flex-1 overflow-y-auto p-6 thin-scroll bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMjAgMjBhMjAgMjAgMCAwIDEgMjAgMjAgMjAgMjAgMCAwIDEtMjAgMjAgMjAgMjAgMCAwIDEtMjAtMjAgMjAgMjAgMCAwIDEgMjAtMjB6IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz48L3N2Zz4=')]">
+
+        <!-- ========== WELCOME ========== -->
+        <div id="page-welcome" class="page hidden space-y-6">
+          <section class="welcome-hero glass-card p-8">
+            <div class="welcome-orb orb-1" aria-hidden="true"></div>
+            <div class="welcome-orb orb-2" aria-hidden="true"></div>
+            <div class="welcome-orb orb-3" aria-hidden="true"></div>
+            <div class="welcome-grid-overlay" aria-hidden="true"></div>
+            <div class="relative z-10 grid grid-cols-1 xl:grid-cols-2 gap-8 items-center">
+              <div>
+                <p class="text-xs uppercase tracking-[0.3em] text-indigo-500">SmartStudy OS</p>
+                <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
+                  Welcome, <span id="welcome-user-name" class="text-indigo-600">Student</span>
+                </h2>
+                <p class="mt-3 text-sm md:text-base text-gray-600">Your advanced learning cockpit for focus, recall, and momentum.</p>
+                <div class="mt-5 flex flex-wrap gap-2 text-xs">
+                  <span class="welcome-chip">Level <span id="welcome-level">4</span></span>
+                  <span class="welcome-chip"><span id="welcome-xp">385</span> XP</span>
+                  <span class="welcome-chip"><span id="welcome-xp-to-next">65</span> XP to next</span>
+                  <span class="welcome-chip">Streak <span id="welcome-streak">0</span>d</span>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-3">
+                  <button onclick="APP.completeWelcome('dashboard')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-md transition">Enter dashboard</button>
+                  <button onclick="APP.completeWelcome('focus')" class="bg-gray-900 hover:bg-black text-white px-5 py-3 rounded-2xl font-semibold shadow-md transition">Start focus mode</button>
+                  <button onclick="APP.completeWelcome('dashboard'); APP.openCommandPalette();" class="bg-white/70 hover:bg-white text-gray-800 px-5 py-3 rounded-2xl font-semibold shadow-md transition">Command palette</button>
+                </div>
+                <div class="mt-5 text-xs text-gray-500 flex items-center gap-2">
+                  <span class="kbd">Ctrl+K</span>
+                  Jump anywhere instantly
+                </div>
+              </div>
+              <div class="welcome-console glass-panel p-6 rounded-3xl">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Mission Console</h3>
+                  <span id="welcome-api-status" class="welcome-status" data-state="online">API online</span>
+                </div>
+                <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                  <div class="flex items-center justify-center">
+                    <div id="welcome-ring" class="welcome-ring" style="--progress: 0;">
+                      <div class="text-center">
+                        <p class="text-[10px] uppercase tracking-wider text-gray-500">Daily XP</p>
+                        <p class="text-2xl font-bold text-gray-900" id="welcome-daily-xp">0</p>
+                        <p class="text-[11px] text-gray-500">Goal <span id="welcome-daily-goal">100</span></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Priority task</span>
+                      <span id="welcome-priority-task" class="font-semibold text-gray-800 text-right">-</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Next event</span>
+                      <span id="welcome-next-event" class="font-semibold text-gray-800 text-right">-</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Tasks due</span>
+                      <span id="welcome-tasks-due" class="font-semibold text-gray-800">0</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Overdue</span>
+                      <span id="welcome-overdue" class="font-semibold text-rose-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Focus today</span>
+                      <span id="welcome-focus-today" class="font-semibold text-gray-800">0 min</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-5 flex flex-wrap gap-2 text-xs">
+                  <span class="welcome-pill">Community <span id="welcome-notes-status">online</span></span>
+                  <span class="welcome-pill">Sync <span id="welcome-sync-status">ready</span></span>
+                  <span class="welcome-pill">Exam credits <span id="welcome-credits">60</span></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="glass-card p-6">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-crosshairs text-indigo-500"></i>
+                <h3 class="font-semibold text-gray-800">Launch sequence</h3>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Three high leverage steps to start fast.</p>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="welcome-step">
+                  <span class="welcome-step-index">1</span>
+                  <div>
+                    <p class="font-semibold text-gray-800">Define your outcome</p>
+                    <p class="text-xs text-gray-500">Set a goal that drives today.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="welcome-step-index">2</span>
+                  <div>
+                    <p class="font-semibold text-gray-800">Pick one priority task</p>
+                    <p class="text-xs text-gray-500">Limit scope, raise execution speed.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="welcome-step-index">3</span>
+                  <div>
+                    <p class="font-semibold text-gray-800">Start a focus sprint</p>
+                    <p class="text-xs text-gray-500">Lock in a 25 minute block.</p>
+                  </div>
+                </div>
+              </div>
+              <button onclick="APP.completeWelcome('tasks')" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold">Set focus task</button>
+            </div>
+            <div class="glass-card p-6 welcome-grid">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-signal text-indigo-500"></i>
+                <h3 class="font-semibold text-gray-800">Trajectory</h3>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Live snapshot of momentum signals.</p>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-500">Daily goal</span>
+                  <span class="font-semibold text-gray-800"><span id="welcome-daily-progress">0</span>%</span>
+                </div>
+                <div class="w-full bg-gray-200/80 rounded-full h-2.5 overflow-hidden">
+                  <div id="welcome-daily-bar" class="h-2.5 rounded-full bg-indigo-500" style="width: 0%;"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-500">Focus streak</span>
+                  <span class="font-semibold text-gray-800"><span id="welcome-focus-streak">0</span> days</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-500">Deep sessions</span>
+                  <span class="font-semibold text-gray-800"><span id="welcome-deep-sessions">0</span></span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-500">Upcoming assignments</span>
+                  <span class="font-semibold text-gray-800"><span id="welcome-assignments">0</span></span>
+                </div>
+              </div>
+              <button onclick="APP.completeWelcome('analytics')" class="mt-4 w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-xl text-sm font-semibold">View analytics</button>
+            </div>
+            <div class="glass-card p-6">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-shield-halved text-indigo-500"></i>
+                <h3 class="font-semibold text-gray-800">System guardrails</h3>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Small automation that protects your time.</p>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="flex items-center justify-between bg-white/60 rounded-xl px-3 py-2">
+                  <span>Auto sync</span>
+                  <span id="welcome-sync-detail" class="text-xs text-gray-600">Ready</span>
+                </div>
+                <div class="flex items-center justify-between bg-white/60 rounded-xl px-3 py-2">
+                  <span>AI tutor</span>
+                  <span class="text-xs text-gray-600">Enabled</span>
+                </div>
+                <div class="flex items-center justify-between bg-white/60 rounded-xl px-3 py-2">
+                  <span>Course gating</span>
+                  <span class="text-xs text-gray-600">Active</span>
+                </div>
+                <div class="flex items-center justify-between bg-white/60 rounded-xl px-3 py-2">
+                  <span>Community notes</span>
+                  <span id="welcome-community-detail" class="text-xs text-gray-600">Online</span>
+                </div>
+              </div>
+              <button onclick="APP.completeWelcome('study-rooms')" class="mt-4 w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2.5 rounded-xl text-sm font-semibold">Join study room</button>
+            </div>
+          </section>
+
+          <section class="glass-card p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-semibold text-gray-800">Advanced modules</h3>
+                <p class="text-xs text-gray-500">Jump straight into the systems that move your score.</p>
+              </div>
+              <div class="text-xs text-gray-500">Tip: Use the command palette for instant jumps.</div>
+            </div>
+            <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <button class="welcome-module" onclick="APP.completeWelcome('focus')">
+                <div class="welcome-module-icon bg-indigo-600/10 text-indigo-600"><i class="fas fa-bullseye"></i></div>
+                <div>
+                  <p class="font-semibold text-gray-800">Focus Protocol</p>
+                  <p class="text-xs text-gray-500">Sprint timers and deep work.</p>
+                </div>
+              </button>
+              <button class="welcome-module" onclick="APP.completeWelcome('tasks')">
+                <div class="welcome-module-icon bg-emerald-600/10 text-emerald-600"><i class="fas fa-check-circle"></i></div>
+                <div>
+                  <p class="font-semibold text-gray-800">Task Engine</p>
+                  <p class="text-xs text-gray-500">Prioritize and earn XP fast.</p>
+                </div>
+              </button>
+              <button class="welcome-module" onclick="APP.completeWelcome('ai-test')">
+                <div class="welcome-module-icon bg-amber-500/10 text-amber-600"><i class="fas fa-flask"></i></div>
+                <div>
+                  <p class="font-semibold text-gray-800">AI Test Lab</p>
+                  <p class="text-xs text-gray-500">Generate mock exams instantly.</p>
+                </div>
+              </button>
+              <button class="welcome-module" onclick="APP.completeWelcome('flashcards')">
+                <div class="welcome-module-icon bg-purple-600/10 text-purple-600"><i class="fas fa-layer-group"></i></div>
+                <div>
+                  <p class="font-semibold text-gray-800">Flashcards</p>
+                  <p class="text-xs text-gray-500">Spaced repetition stacks.</p>
+                </div>
+              </button>
+              <button class="welcome-module" onclick="APP.completeWelcome('analytics')">
+                <div class="welcome-module-icon bg-sky-600/10 text-sky-600"><i class="fas fa-chart-line"></i></div>
+                <div>
+                  <p class="font-semibold text-gray-800">Analytics</p>
+                  <p class="text-xs text-gray-500">Track trends and streaks.</p>
+                </div>
+              </button>
+              <button class="welcome-module" onclick="APP.completeWelcome('chatbot')">
+                <div class="welcome-module-icon bg-rose-600/10 text-rose-600"><i class="fas fa-robot"></i></div>
+                <div>
+                  <p class="font-semibold text-gray-800">AI Tutor</p>
+                  <p class="text-xs text-gray-500">Ask, summarize, and plan.</p>
+                </div>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <!-- ========== DASHBOARD ========== -->
+        <div id="page-dashboard" class="page space-y-6">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="glass-card p-6 xl:col-span-2">
+              <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs uppercase tracking-wider text-gray-500">Welcome back</p>
+                  <h3 class="text-3xl font-bold text-gray-800" id="dashboard-welcome-name">Student</h3>
+                  <p class="text-sm text-gray-500 mt-1">Your learning command center for today.</p>
+                  <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full" id="dashboard-top-task">Top task: -</span>
+                    <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full" id="dashboard-next-event">Next event: -</span>
+                    <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full" id="dashboard-next-assignment">Next assignment: -</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Total XP</p>
+                    <p class="text-3xl font-bold text-indigo-600"><span class="global-xp-value">385</span></p>
+                    <p class="text-xs text-gray-500">Level <span class="user-level-display">4</span></p>
+                  </div>
+                  <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center">
+                    <i class="fas fa-brain text-indigo-500 text-3xl"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="glass-card p-6 bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-600 text-white border-none">
+              <p class="text-sm opacity-90">Today's momentum</p>
+              <p class="text-4xl font-bold mt-2"><span id="dashboard-xp-today">0</span> XP</p>
+              <div class="mt-4 space-y-2 text-xs">
+                <div class="flex items-center justify-between"><span>Focus minutes</span><span id="dashboard-focus-today">0</span></div>
+                <div class="flex items-center justify-between"><span>Tasks due</span><span id="dashboard-tasks-due">0</span></div>
+                <div class="flex items-center justify-between"><span>Overdue</span><span id="dashboard-overdue-count">0</span></div>
+              </div>
+              <button onclick="APP.showPage('analytics')" class="mt-5 w-full bg-white/20 hover:bg-white/30 text-white py-2 rounded-xl text-sm">View analytics</button>
+            </div>
+          </div>
+
+          <div class="glass-card live-command-card p-5">
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+              <div class="flex items-start gap-4">
+                <div class="live-status-orb" id="dashboard-live-status-dot"><i class="fas fa-bolt"></i></div>
+                <div>
+                  <p class="text-xs uppercase tracking-wider text-gray-500">Real-time workspace</p>
+                  <h3 class="text-xl font-bold text-gray-800" id="dashboard-live-status">Local live sync</h3>
+                  <p class="text-sm text-gray-500 mt-1" id="dashboard-live-detail">Your study data updates instantly across this browser.</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm min-w-full xl:min-w-[560px]">
+                <div class="live-metric">
+                  <span>Last pulse</span>
+                  <strong id="dashboard-live-updated">now</strong>
+                </div>
+                <div class="live-metric">
+                  <span>Open sessions</span>
+                  <strong id="dashboard-live-tabs">1</strong>
+                </div>
+                <div class="live-metric">
+                  <span>Room activity</span>
+                  <strong id="dashboard-live-room-activity">0 today</strong>
+                </div>
+                <button onclick="APP.manualRealtimeSync()" class="live-sync-button"><i class="fas fa-rotate"></i><span>Sync now</span></button>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div class="lg:col-span-2">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs uppercase tracking-wider text-gray-500">Live activity</p>
+                  <span class="text-[10px] text-gray-400" id="dashboard-live-mode">Cross-tab mode</span>
+                </div>
+                <div id="dashboard-live-events" class="live-feed mt-2"></div>
+              </div>
+              <div class="live-now-panel">
+                <p class="text-xs uppercase tracking-wider text-gray-500">Right now</p>
+                <div class="mt-2 space-y-2 text-sm">
+                  <div class="flex items-center justify-between"><span>Focus timer</span><strong id="dashboard-live-focus-state">Idle</strong></div>
+                  <div class="flex items-center justify-between"><span>Current room</span><strong id="dashboard-live-room">-</strong></div>
+                  <div class="flex items-center justify-between"><span>API</span><strong id="dashboard-live-api">Ready</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Focus today</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="dashboard-focus-card">0 min</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Assignments week</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="dashboard-assignments-week">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Habits done</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="dashboard-habits-done">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Wellness streak</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2"><span id="dashboard-wellness-streak">0</span> days</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Study rooms</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="dashboard-rooms-active">0</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-semibold text-gray-800">Quick actions</h3>
+                <p class="text-xs text-gray-500">Launch common flows in one click.</p>
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <button onclick="APP.openAddTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl">Add task</button>
+                <button onclick="APP.startTimer()" class="bg-gray-900 hover:bg-black text-white px-3 py-2 rounded-xl">Start focus</button>
+                <button onclick="APP.showPage('notes')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl">Upload notes</button>
+                <button onclick="APP.showPage('study-rooms')" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-xl">Join room</button>
+                <button onclick="APP.showPage('chatbot')" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-xl">Ask AI</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 space-y-6">
+              <div class="glass-card p-6">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Today plan</h3>
+                  <button onclick="APP.showPage('tasks')" class="text-xs text-indigo-600">manage</button>
+                </div>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Tasks</p>
+                    <div id="dashboard-tasks-list" class="mt-2 space-y-2 text-sm"></div>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Schedule</p>
+                    <div id="dashboard-schedule-list" class="mt-2 space-y-2 text-sm"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="glass-card p-6">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-clock text-indigo-500 text-xl"></i>
+                  <h3 class="font-semibold text-gray-800">Focus Timer</h3>
+                  <span class="ml-auto bg-indigo-100 text-indigo-700 text-[10px] px-2 py-1 rounded-full font-bold">+10 XP</span>
+                </div>
+                <div class="mt-4 flex items-center justify-between">
+                  <span id="timer-display" class="timer-digit text-indigo-700">25:00</span>
+                  <div class="flex gap-2">
+                    <button onclick="APP.startTimer()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl shadow-md transition"><i class="fas fa-play"></i></button>
+                    <button onclick="APP.pauseTimer()" class="bg-gray-500 hover:bg-gray-600 text-white p-3 rounded-xl shadow-md transition"><i class="fas fa-pause"></i></button>
+                    <button onclick="APP.resetTimer()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-3 rounded-xl shadow-md transition"><i class="fas fa-undo-alt"></i></button>
+                  </div>
+                </div>
+                <div class="mt-3 text-sm text-gray-600 flex items-center gap-2">
+                  <i class="fas fa-lightbulb text-yellow-500"></i>
+                  <span id="timer-suggestion">Work on a task</span>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-gray-600">
+                  <div class="flex items-center gap-2">
+                    <i class="fas fa-sliders-h text-indigo-400"></i>
+                    <label for="timer-length" class="font-medium">Session</label>
+                    <select id="timer-length" onchange="APP.setTimerLength(this.value)" class="bg-white/70 dark:bg-gray-800/70 border-0 rounded-full px-3 py-1">
+                      <option value="15">15 min</option>
+                      <option value="25">25 min</option>
+                      <option value="45">45 min</option>
+                      <option value="60">60 min</option>
+                    </select>
+                  </div>
+                  <button onclick="APP.toggleFocusMode()" class="text-indigo-600 hover:underline">Focus mode</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="glass-card p-6">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Assignments spotlight</h3>
+                  <button onclick="APP.showPage('assignments')" class="text-xs text-indigo-600">view all</button>
+                </div>
+                <div id="dashboard-assignments-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+              <div class="glass-card p-6">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Notes and resources</h3>
+                  <button onclick="APP.showPage('notes')" class="text-xs text-indigo-600">view all</button>
+                </div>
+                <div id="dashboard-notes-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Wellness pulse</h3>
+                <div id="dashboard-wellness-summary" class="mt-3 space-y-2 text-sm"></div>
+                <button onclick="APP.showPage('student-life')" class="mt-3 text-xs text-indigo-600">Open Student Life</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6 lg:col-span-2">
+              <div class="flex justify-between items-center">
+                <h3 class="font-semibold text-gray-800 flex items-center"><i class="fas fa-bullseye mr-2 text-indigo-500"></i>Focus log</h3>
+                <button onclick="APP.showPage('focus')" class="text-xs text-indigo-600">view all</button>
+              </div>
+              <div class="mt-3 flex items-center gap-3 text-xs text-gray-600">
+                <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">Today: <span id="focus-today-total">0</span> min</span>
+                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Last: <span id="focus-last-session">None yet</span></span>
+              </div>
+              <div id="focus-log-list" class="mt-4 space-y-2 text-sm"></div>
+            </div>
+            <div class="glass-card p-6">
+              <div class="flex justify-between items-center">
+                <h3 class="font-semibold text-gray-800 flex items-center"><i class="fas fa-seedling mr-2 text-green-600"></i>Habits today</h3>
+                <button onclick="APP.showPage('habits')" class="text-xs text-indigo-600">open</button>
+              </div>
+              <div id="dashboard-habits-list" class="mt-3 space-y-3 text-sm"></div>
+              <button onclick="APP.openAddHabitModal()" class="mt-4 text-green-700 text-xs flex items-center bg-green-50 px-3 py-2 rounded-xl w-full"><i class="fas fa-plus mr-1"></i>Add habit</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== STUDENT LIFE ========== -->
+        <div id="page-student-life" class="page hidden space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800 flex items-center"><i class="fas fa-leaf text-green-500 mr-3"></i> Student Life & Wellness</h2>
+              <p class="text-sm text-gray-500">Track energy, reset focus, and build sustainable routines.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.logWellnessActivity('break')" class="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 rounded-xl text-sm">Log break</button>
+              <button onclick="APP.logWellnessActivity('hydrate')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-xl text-sm">Hydrate</button>
+              <button onclick="APP.showPage('focus')" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl text-sm">Focus sprint</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Mood avg</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="wellness-mood-avg">0.0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Energy avg</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="wellness-energy-avg">0.0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Stress avg</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="wellness-stress-avg">0.0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Check-ins</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="wellness-checkins-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Streak</p>
+              <p class="text-2xl font-bold text-green-600 mt-2"><span id="wellness-streak">0</span> days</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="glass-card p-6 xl:col-span-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-semibold text-gray-800">Daily check-in</h3>
+                  <p class="text-xs text-gray-500">Log mood and energy to personalize tips.</p>
+                </div>
+                <span class="text-xs text-gray-500" id="wellness-last-checkin">Last: -</span>
+              </div>
+              <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                <select id="wellness-mood" class="bg-white/70 border-0 rounded-xl p-2.5">
+                  <option value="5">Mood 5 (Great)</option>
+                  <option value="4">Mood 4 (Good)</option>
+                  <option value="3">Mood 3 (OK)</option>
+                  <option value="2">Mood 2 (Low)</option>
+                  <option value="1">Mood 1 (Tough)</option>
+                </select>
+                <select id="wellness-energy" class="bg-white/70 border-0 rounded-xl p-2.5">
+                  <option value="5">Energy 5</option>
+                  <option value="4">Energy 4</option>
+                  <option value="3">Energy 3</option>
+                  <option value="2">Energy 2</option>
+                  <option value="1">Energy 1</option>
+                </select>
+                <select id="wellness-stress" class="bg-white/70 border-0 rounded-xl p-2.5">
+                  <option value="1">Stress 1 (Low)</option>
+                  <option value="2">Stress 2</option>
+                  <option value="3">Stress 3</option>
+                  <option value="4">Stress 4</option>
+                  <option value="5">Stress 5 (High)</option>
+                </select>
+                <button onclick="APP.logWellnessCheckin()" class="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2.5">Log check-in</button>
+              </div>
+              <textarea id="wellness-gratitude" class="mt-3 w-full bg-white/70 border-0 rounded-xl p-3 text-sm" rows="2" placeholder="Gratitude or reflection (optional)"></textarea>
+              <div class="mt-4">
+                <h4 class="text-xs text-gray-500 uppercase tracking-wider">Recent check-ins</h4>
+                <div id="wellness-checkin-history" class="mt-2 space-y-2 text-sm"></div>
+              </div>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Reset rituals</h3>
+                <p class="text-xs text-gray-500">Short activities to restore focus.</p>
+                <div id="wellness-plan-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Community events</h3>
+                <p class="text-xs text-gray-500">Campus and online wellness sessions.</p>
+                <div id="wellness-events-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6">
+              <h3 class="font-semibold text-gray-800">Wellness resources</h3>
+              <div id="wellness-resource-list" class="mt-3 space-y-2 text-sm"></div>
+            </div>
+            <div class="glass-card p-6 bg-indigo-50/70 border border-indigo-200 lg:col-span-2">
+              <p class="font-medium text-indigo-800">wellness tip of the day</p>
+              <p id="wellness-daily-tip" class="text-lg text-indigo-900 font-medium mt-1">Take a 2-minute stretch break every hour.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== FOCUS ========== -->
+        <div id="page-focus" class="page hidden space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-bullseye mr-2 text-indigo-600"></i> Focus Sessions</h2>
+              <p class="text-sm text-gray-500">Deep work analytics, goal tracking, and session insights.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.startTimer()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-play mr-1"></i> Start timer</button>
+              <button onclick="APP.toggleFocusMode()" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-expand mr-1"></i> Focus Mode</button>
+              <button onclick="APP.clearFocusLog()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-xl text-sm">Clear log</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Today</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2"><span id="focus-today-minutes">0</span> min</p>
+              <p class="text-xs text-gray-500 mt-1">Deep focus time</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">This Week</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2"><span id="focus-week-minutes">0</span> min</p>
+              <p class="text-xs text-gray-500 mt-1">Last 7 days</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Avg Session</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2"><span id="focus-avg-session">0</span> min</p>
+              <p class="text-xs text-gray-500 mt-1">Session length</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Focus Streak</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2"><span id="focus-streak-days">0</span> days</p>
+              <p class="text-xs text-gray-500 mt-1">Consecutive days</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="glass-card p-6 xl:col-span-2">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h3 class="font-semibold text-gray-800">Focus trend</h3>
+                  <p class="text-xs text-gray-500">Minutes of focus over time.</p>
+                </div>
+                <select id="focus-range" onchange="APP.renderFocusPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="all">All time</option>
+                </select>
+              </div>
+              <canvas id="focus-page-chart" style="height:240px; width:100%"></canvas>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="font-semibold text-gray-800">Daily focus goal</h3>
+                    <p class="text-xs text-gray-500">Adjust your target minutes.</p>
+                  </div>
+                  <input id="focus-daily-goal" type="number" min="15" max="240" class="w-20 bg-white/70 rounded-xl p-2 text-sm" onchange="APP.updateFocusGoal()">
+                </div>
+                <div class="mt-4">
+                  <div class="w-full bg-gray-100 rounded-full h-2">
+                    <div id="focus-goal-bar" class="h-2 rounded-full bg-indigo-500" style="width:0%"></div>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-2" id="focus-goal-label">0 / 0 min</p>
+                </div>
+              </div>
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Insights</h3>
+                <div id="focus-insights-list" class="mt-3 space-y-2 text-sm"></div>
+                <div class="mt-4">
+                  <p class="text-xs text-gray-500 uppercase tracking-wider">Next action</p>
+                  <p id="focus-recommendation" class="text-sm text-gray-700 mt-1">Schedule a 45-minute deep work block.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-semibold text-gray-800">Session history</h3>
+                <p class="text-xs text-gray-500">Track every completed focus sprint.</p>
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                  <i class="fas fa-search text-indigo-500"></i>
+                  <input id="focus-search" class="bg-transparent outline-none text-xs" placeholder="Search task..." oninput="APP.renderFocusPage()">
+                </div>
+                <select id="focus-sort" onchange="APP.renderFocusPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="recent">Recent</option>
+                  <option value="duration">Duration</option>
+                  <option value="task">Task name</option>
+                </select>
+                <span id="focus-log-count" class="text-xs text-gray-500 bg-white/70 px-3 py-2 rounded-xl">0 sessions</span>
+              </div>
+            </div>
+            <div id="focus-log-full" class="mt-4 space-y-2 text-sm"></div>
+          </div>
+        </div>
+
+        <!-- ========== HABITS ========== -->
+        <div id="page-habits" class="page hidden space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-seedling mr-2 text-green-600"></i> Habits</h2>
+              <p class="text-sm text-gray-500">Build streaks with smart targets and weekly consistency.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.openAddHabitModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-plus mr-1"></i> New habit</button>
+              <button onclick="APP.resetAllHabitsToday()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-xl text-sm">Reset today</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Total habits</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="habits-total-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Completed today</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="habits-completed-today">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Best streak</p>
+              <p class="text-2xl font-bold text-green-600 mt-2"><span id="habits-best-streak">0</span> days</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Consistency</p>
+              <p class="text-2xl font-bold text-green-600 mt-2" id="habits-consistency">0%</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2 flex-1">
+                <i class="fas fa-search text-green-500"></i>
+                <input id="habits-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search habits..." oninput="APP.renderHabitsPage()">
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <select id="habits-filter" onchange="APP.renderHabitsPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All habits</option>
+                  <option value="completed">Completed today</option>
+                  <option value="pending">Pending today</option>
+                  <option value="struggling">Struggling</option>
+                </select>
+                <select id="habits-sort" onchange="APP.renderHabitsPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="streak">Streak</option>
+                  <option value="completion">Completion</option>
+                  <option value="name">Name</option>
+                  <option value="consistency">Consistency</option>
+                </select>
+                <label class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                  <input id="habits-show-empty" type="checkbox" class="rounded" checked onchange="APP.renderHabitsPage()">
+                  <span class="text-xs text-gray-600">Show empty</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2">
+              <div id="habits-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Weekly consistency</h3>
+                <div id="habits-week-heatmap" class="heatmap-grid mt-3"></div>
+                <p id="habits-week-label" class="text-xs text-gray-500 mt-2">Last 7 days of habit completion.</p>
+              </div>
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Insights</h3>
+                <div id="habits-insight-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Templates</h3>
+                <p class="text-xs text-gray-500">One-click habits to stay consistent.</p>
+                <div id="habits-template-list" class="mt-3 flex flex-wrap gap-2 text-xs">
+                  <button onclick="APP.addHabitTemplate('Read 20 minutes', 1)" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-full">Read 20 min</button>
+                  <button onclick="APP.addHabitTemplate('Practice problems', 1)" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-full">Practice</button>
+                  <button onclick="APP.addHabitTemplate('Hydrate', 6)" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-full">Hydrate x6</button>
+                  <button onclick="APP.addHabitTemplate('Plan tomorrow', 1)" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-full">Plan</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== TASKS ========== -->
+        <div id="page-tasks" class="page hidden space-y-5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-check-circle mr-2 text-indigo-600"></i> Tasks</h2>
+              <p class="text-sm text-gray-500">Prioritize, track, and execute your daily workflow.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.completeAllTasks()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-xl text-sm">Complete all</button>
+              <button onclick="APP.openAddTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md flex items-center gap-2"><i class="fas fa-plus"></i> New task</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Total tasks</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="tasks-total-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Completed</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="tasks-completed-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Due today</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="tasks-due-today">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Overdue</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="tasks-overdue-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">XP potential</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="tasks-xp-total">0</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2 flex-1">
+                <i class="fas fa-search text-indigo-500"></i>
+                <input id="tasks-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search tasks..." oninput="APP.renderTasksPage()">
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <select id="tasks-filter" onchange="APP.renderTasksPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="today">Due today</option>
+                </select>
+                <select id="tasks-sort" onchange="APP.renderTasksPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="due">Due date</option>
+                  <option value="priority">Priority</option>
+                  <option value="xp">XP</option>
+                  <option value="title">Title</option>
+                </select>
+                <label class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                  <input id="tasks-show-completed" type="checkbox" class="rounded" checked onchange="APP.renderTasksPage()">
+                  <span class="text-xs text-gray-600">Show completed</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2">
+              <div class="glass-card p-6">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Task list</h3>
+                  <span class="text-xs text-gray-500" id="tasks-list-count">0 tasks</span>
+                </div>
+                <div id="tasks-list-container" class="mt-4 space-y-2 max-h-[520px] overflow-y-auto thin-scroll"></div>
+              </div>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Task insights</h3>
+                <div id="tasks-insights-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Upcoming focus</h3>
+                <div id="tasks-upcoming-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== FLASHCARDS ========== -->
+        <div id="page-flashcards" class="page hidden space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-layer-group mr-2 text-indigo-600"></i> Flashcards</h2>
+              <p class="text-sm text-gray-500">Spaced repetition, mastery scoring, and a daily review queue.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.startFlashcardSession('due')" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-play mr-1"></i> Review due</button>
+              <button onclick="APP.openCreateDeckModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-plus mr-1"></i> New deck</button>
+              <button onclick="APP.openFlashcardImportModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-sm"><i class="fas fa-file-import mr-1"></i> Import</button>
+            </div>
+          </div>
+
+          <div id="flashcards-browse" class="space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="glass-card p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Decks</p>
+                <p class="text-2xl font-bold text-indigo-600 mt-2" id="flashcards-total-decks">0</p>
+              </div>
+              <div class="glass-card p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Total cards</p>
+                <p class="text-2xl font-bold text-indigo-600 mt-2" id="flashcards-total-cards">0</p>
+              </div>
+              <div class="glass-card p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Due now</p>
+                <p class="text-2xl font-bold text-indigo-600 mt-2" id="flashcards-due-count">0</p>
+              </div>
+              <div class="glass-card p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Avg mastery</p>
+                <p class="text-2xl font-bold text-indigo-600 mt-2" id="flashcards-mastery-score">0.0</p>
+              </div>
+            </div>
+
+            <div class="glass-card p-5">
+              <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2 flex-1">
+                  <i class="fas fa-search text-indigo-500"></i>
+                  <input id="flashcards-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search decks or cards..." oninput="APP.renderFlashcardDecks()">
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs">
+                  <select id="flashcards-filter" onchange="APP.renderFlashcardDecks()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                    <option value="all">All decks</option>
+                    <option value="due">Due now</option>
+                    <option value="today">Due today</option>
+                    <option value="empty">Empty decks</option>
+                  </select>
+                  <select id="flashcards-sort" onchange="APP.renderFlashcardDecks()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                    <option value="name">Name</option>
+                    <option value="cards">Cards</option>
+                    <option value="due">Due count</option>
+                    <option value="mastery">Mastery</option>
+                  </select>
+                  <label class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                    <input id="flashcards-show-empty" type="checkbox" class="rounded" checked onchange="APP.renderFlashcardDecks()">
+                    <span class="text-xs text-gray-600">Show empty decks</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div class="xl:col-span-2 space-y-4">
+                <div id="decks-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+              </div>
+              <div class="space-y-6">
+                <div class="glass-card p-5">
+                  <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-800">Daily review queue</h3>
+                    <span class="text-xs text-gray-500" id="flashcards-due-count-label">0 due</span>
+                  </div>
+                  <div class="mt-3">
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                      <div id="flashcards-review-bar" class="h-2 rounded-full bg-indigo-500" style="width:0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Goal: <span id="flashcards-review-goal">20</span> cards</p>
+                  </div>
+                  <div id="flashcards-due-list" class="mt-3 space-y-2 text-sm"></div>
+                  <button onclick="APP.startFlashcardSession('due')" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-sm">Start daily review</button>
+                </div>
+
+                <div class="glass-card p-5 space-y-3">
+                  <h3 class="font-semibold text-gray-800">Session controls</h3>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">Shuffle cards</span>
+                    <input id="flashcards-shuffle-toggle" type="checkbox" class="rounded" onchange="APP.updateFlashcardSettings()">
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">Session size</span>
+                    <input id="flashcards-session-size" type="number" min="5" max="100" class="w-24 bg-white/70 rounded-xl p-2 text-sm" onchange="APP.updateFlashcardSettings()">
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">Daily goal</span>
+                    <input id="flashcards-daily-goal" type="number" min="5" max="200" class="w-24 bg-white/70 rounded-xl p-2 text-sm" onchange="APP.updateFlashcardSettings()">
+                  </div>
+                  <button onclick="APP.startFlashcardSession('all')" class="w-full bg-gray-900 hover:bg-black text-white py-2 rounded-xl text-sm">Cram all cards</button>
+                </div>
+
+                <div class="glass-card p-5 space-y-3">
+                  <h3 class="font-semibold text-gray-800">Quick add</h3>
+                  <select id="flashcards-quick-deck" class="w-full bg-white/70 border-0 rounded-xl p-2 text-sm"></select>
+                  <input id="flashcards-quick-front" class="w-full bg-white/70 border-0 rounded-xl p-2 text-sm" placeholder="Front (question)">
+                  <input id="flashcards-quick-back" class="w-full bg-white/70 border-0 rounded-xl p-2 text-sm" placeholder="Back (answer)">
+                  <button onclick="APP.quickAddFlashcard()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-sm">Add card</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Review area -->
+          <div id="flashcard-review-area" class="hidden glass-card p-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Review session</p>
+                <h3 class="text-xl font-semibold" id="current-deck-name"></h3>
+                <p class="text-xs text-gray-500 mt-1" id="flashcard-session-meta">0 cards</p>
+              </div>
+              <button onclick="APP.exitFlashcardReview()" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times"></i> exit</button>
+            </div>
+            <div class="mt-6 text-center">
+              <p class="text-xs text-gray-500 mb-2">Tap card to flip</p>
+              <div id="flashcard-container"></div>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-6">
+              <div class="flex flex-wrap gap-3">
+                <button onclick="APP.flashcardCorrect()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full shadow-md transition"><i class="fas fa-check mr-2"></i>Correct (+5 XP)</button>
+                <button onclick="APP.flashcardIncorrect()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-full shadow-md transition"><i class="fas fa-times mr-2"></i>Incorrect (+2 XP)</button>
+              </div>
+              <div class="flex items-center gap-3">
+                <p class="text-sm text-gray-600" id="flashcard-progress">Card 1/5</p>
+                <div class="w-32 bg-gray-200 rounded-full h-2">
+                  <div id="flashcard-progress-bar" class="h-2 rounded-full bg-indigo-500" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3" id="flashcard-card-meta"></p>
+          </div>
+        </div>
+
+        <!-- ========== ASSIGNMENTS ========== -->
+        <div id="page-assignments" class="page hidden space-y-5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-book-open mr-2 text-indigo-600"></i> Assignments</h2>
+              <p class="text-sm text-gray-500">Track deadlines, weights, and grade impact.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.openAddAssignmentModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md flex items-center gap-2"><i class="fas fa-plus"></i> Add assignment</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Total</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="assignments-total">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Completed</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="assignments-completed">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Upcoming</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="assignments-upcoming">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Workload</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="assignments-workload-hours">0h</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2 flex-1">
+                <i class="fas fa-search text-indigo-500"></i>
+                <input id="assignments-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search assignments..." oninput="APP.renderAssignments()">
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <select id="assignments-filter" onchange="APP.renderAssignments()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+                <select id="assignments-sort" onchange="APP.renderAssignments()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="due">Due date</option>
+                  <option value="weight">Weight</option>
+                  <option value="hours">Hours</option>
+                  <option value="title">Title</option>
+                </select>
+                <label class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                  <input id="assignments-show-completed" type="checkbox" class="rounded" checked onchange="APP.renderAssignments()">
+                  <span class="text-xs text-gray-600">Show completed</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2">
+              <div id="assignments-list" class="grid gap-4 md:grid-cols-2"></div>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Grade impact</h3>
+                <p class="text-xs text-gray-500">Estimate based on completed weight.</p>
+                <div class="mt-3">
+                  <div class="w-full bg-gray-100 rounded-full h-2">
+                    <div id="assignments-weight-bar" class="h-2 rounded-full bg-indigo-500" style="width:0%"></div>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-2" id="assignments-weight-label">0% completed</p>
+                </div>
+              </div>
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Upcoming deadlines</h3>
+                <div id="assignments-upcoming-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Workload focus</h3>
+                <div id="assignments-focus-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== SCHEDULE ========== -->
+        <div id="page-schedule" class="page hidden space-y-5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-calendar-alt mr-2 text-indigo-600"></i> Weekly Schedule</h2>
+              <p class="text-sm text-gray-500">Plan, prioritize, and spot conflicts across your week.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.exportSchedule()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-xl text-sm">Download</button>
+              <button onclick="APP.syncSchedule()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-sm">Sync</button>
+              <button onclick="APP.openAddEventModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-plus mr-1"></i> Add event</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Events this week</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="schedule-events-week">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Next event</p>
+              <p class="text-sm font-semibold text-indigo-600 mt-2" id="schedule-next-event">-</p>
+              <p class="text-xs text-gray-500 mt-1" id="schedule-next-event-time">-</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Scheduled hours</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="schedule-total-hours">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Free slots</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="schedule-free-slots">0</p>
+              <p class="text-xs text-gray-500 mt-1">Estimated hours</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2 flex-1">
+                <i class="fas fa-search text-indigo-500"></i>
+                <input id="schedule-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search events by title or location..." oninput="APP.renderSchedule()">
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <select id="schedule-type-filter" onchange="APP.renderSchedule()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All types</option>
+                  <option value="Study">Study</option>
+                  <option value="Lecture">Lecture</option>
+                  <option value="Exam">Exam</option>
+                  <option value="Project">Project</option>
+                  <option value="Personal">Personal</option>
+                </select>
+                <select id="schedule-day-filter" onchange="APP.renderSchedule()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All days</option>
+                  <option value="Mon">Mon</option>
+                  <option value="Tue">Tue</option>
+                  <option value="Wed">Wed</option>
+                  <option value="Thu">Thu</option>
+                  <option value="Fri">Fri</option>
+                  <option value="Sat">Sat</option>
+                  <option value="Sun">Sun</option>
+                </select>
+                <select id="schedule-sort" onchange="APP.renderSchedule()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="time">Time</option>
+                  <option value="title">Title</option>
+                  <option value="duration">Duration</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 space-y-4">
+              <div class="glass-card p-6">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-800">Week view</h3>
+                  <span class="text-xs text-gray-500" id="schedule-conflict-count">0 conflicts</span>
+                </div>
+                <div id="schedule-week-grid" class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+              </div>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Quick add</h3>
+                <div class="mt-3 space-y-3 text-sm">
+                  <input id="schedule-quick-title" class="w-full bg-white/70 border-0 rounded-xl p-2.5" placeholder="Event title">
+                  <div class="grid grid-cols-2 gap-2">
+                    <select id="schedule-quick-day" class="bg-white/70 border-0 rounded-xl p-2.5">
+                      <option>Mon</option><option>Tue</option><option>Wed</option><option>Thu</option><option>Fri</option><option>Sat</option><option>Sun</option>
+                    </select>
+                    <input id="schedule-quick-time" class="bg-white/70 border-0 rounded-xl p-2.5" placeholder="HH:MM">
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <select id="schedule-quick-type" class="bg-white/70 border-0 rounded-xl p-2.5">
+                      <option>Study</option><option>Lecture</option><option>Exam</option><option>Project</option><option>Personal</option>
+                    </select>
+                    <input id="schedule-quick-duration" type="number" class="bg-white/70 border-0 rounded-xl p-2.5" placeholder="Duration (min)">
+                  </div>
+                  <input id="schedule-quick-location" class="w-full bg-white/70 border-0 rounded-xl p-2.5" placeholder="Location (optional)">
+                  <button onclick="APP.addScheduleQuick()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-sm">Add to schedule</button>
+                </div>
+              </div>
+
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Upcoming events</h3>
+                <div id="schedule-upcoming-list" class="mt-3 space-y-3 text-sm"></div>
+              </div>
+
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Focus windows</h3>
+                <p class="text-xs text-gray-500">Suggested gaps to schedule deep work.</p>
+                <div id="schedule-focus-windows" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== NOTES ========== -->
+        <div id="page-notes" class="page hidden space-y-5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-sticky-note mr-2 text-indigo-600"></i> Notes</h2>
+              <p class="text-sm text-gray-500">Personal notes, community uploads, and server-backed downloads.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span id="notes-server-status" class="bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs">Server: Online</span>
+              <span id="notes-last-sync" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs">Last sync: -</span>
+              <button onclick="APP.syncNotesToServer()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-sm">Sync</button>
+              <button onclick="APP.openAddNoteModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-plus mr-1"></i> New note</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">My notes</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="notes-total-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Shared</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="notes-shared-count">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Downloads</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="notes-downloads-total">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Likes</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="notes-likes-total">0</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2 flex-1">
+                <i class="fas fa-search text-indigo-500"></i>
+                <input id="notes-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search notes by title, tags, or author..." oninput="APP.renderNotesPage()">
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <select id="notes-subject-filter" onchange="APP.renderNotesPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All subjects</option>
+                </select>
+                <select id="notes-category-filter" onchange="APP.renderNotesPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All categories</option>
+                </select>
+                <select id="notes-file-filter" onchange="APP.renderNotesPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All file types</option>
+                  <option value="pdf">PDF</option>
+                  <option value="doc">Docs</option>
+                  <option value="ppt">Slides</option>
+                  <option value="image">Images</option>
+                  <option value="text">Text</option>
+                </select>
+                <select id="notes-visibility-filter" onchange="APP.renderNotesPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All visibility</option>
+                  <option value="private">Private</option>
+                  <option value="public">Public</option>
+                </select>
+                <select id="notes-sort" onchange="APP.renderNotesPage()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="recent">Most recent</option>
+                  <option value="popular">Most liked</option>
+                  <option value="downloads">Most downloaded</option>
+                  <option value="title">Title</option>
+                </select>
+                <label class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                  <input id="notes-show-community" type="checkbox" class="rounded" checked onchange="APP.renderNotesPage()">
+                  <span class="text-xs text-gray-600">Show community</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 space-y-4">
+              <h3 class="font-semibold text-gray-800">My Notes</h3>
+              <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+            </div>
+            <div class="space-y-6">
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Upload notes to help others</h3>
+                <p class="text-xs text-gray-500">Publish to the SmartStudy online server.</p>
+                <div class="mt-4 space-y-3 text-sm">
+                  <input id="notes-upload-title" class="w-full bg-white/70 border-0 rounded-xl p-2.5" placeholder="Note title">
+                  <input id="notes-upload-subject" class="w-full bg-white/70 border-0 rounded-xl p-2.5" placeholder="Subject (e.g., Physics)">
+                  <input id="notes-upload-category" class="w-full bg-white/70 border-0 rounded-xl p-2.5" placeholder="Category (e.g., Exam, Lecture, Cheatsheet)">
+                  <input id="notes-upload-tags" class="w-full bg-white/70 border-0 rounded-xl p-2.5" placeholder="Tags (comma separated)">
+                  <select id="notes-upload-visibility" class="w-full bg-white/70 border-0 rounded-xl p-2.5">
+                    <option value="public">Public (help others)</option>
+                    <option value="private">Private</option>
+                  </select>
+                  <textarea id="notes-upload-content" class="w-full bg-white/70 border-0 rounded-xl p-2.5 text-sm" rows="3" placeholder="Short description or key points"></textarea>
+                  <input id="notes-upload-file" type="file" class="w-full text-xs text-gray-500">
+                  <p class="text-[10px] text-gray-500">Secure upload requires sign-in. Public uploads appear instantly.</p>
+                  <button onclick="APP.uploadNoteFromForm()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-sm">Upload to server</button>
+                </div>
+              </div>
+
+              <div class="glass-card p-5">
+                <h3 class="font-semibold text-gray-800">Community Notes</h3>
+                <p class="text-xs text-gray-500">Download notes shared by other students.</p>
+                <div id="notes-community-list" class="mt-4 space-y-3 text-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== AI TEST GENERATOR ========== -->
+        <div id="page-ai-test" class="page hidden space-y-6">
+          <div class="glass-card p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-2xl flex items-center"><i class="fas fa-magic text-indigo-600 mr-2"></i> AI Exam Notes Generator</h3>
+                <p class="text-xs text-gray-500">One click exam notes, revision mode, diagrams, and important questions.</p>
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full">Credits: <span id="exam-credit-count">0</span></span>
+                <span id="jwt-status-pill" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">JWT: Guest</span>
+                <span id="api-status-pill" class="bg-green-100 text-green-700 px-3 py-1.5 rounded-full">API: Ready</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6 lg:col-span-2 space-y-5">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select id="exam-class" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm">
+                  <option value="Class 9">Class 9</option>
+                  <option value="Class 10">Class 10</option>
+                  <option value="Class 11">Class 11</option>
+                  <option value="Class 12">Class 12</option>
+                  <option value="UG 1">UG 1</option>
+                  <option value="UG 2">UG 2</option>
+                  <option value="UG 3">UG 3</option>
+                </select>
+                <select id="exam-subject" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm">
+                  <option>Mathematics</option>
+                  <option>Physics</option>
+                  <option>Chemistry</option>
+                  <option>Biology</option>
+                  <option>Computer Science</option>
+                  <option>Economics</option>
+                  <option>History</option>
+                </select>
+                <input id="exam-topic" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm" placeholder="Topic (e.g., Integration, Data Structures)">
+                <select id="exam-type" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm">
+                  <option>Unit Test</option>
+                  <option>Midterm</option>
+                  <option>Final</option>
+                  <option>Board Exam</option>
+                  <option>Competitive</option>
+                </select>
+                <select id="exam-output" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm">
+                  <option value="outline">Outline format</option>
+                  <option value="bullets">Bullet summary</option>
+                  <option value="qa">Question and Answer</option>
+                </select>
+                <div class="flex items-center gap-3 bg-white/70 rounded-xl p-3">
+                  <label class="text-xs text-gray-500 uppercase tracking-wider">Revision mode</label>
+                  <input id="exam-revision" type="checkbox" class="rounded" onchange="APP.updateExamCostUI()">
+                </div>
+                <div class="flex items-center gap-3 bg-white/70 rounded-xl p-3">
+                  <label class="text-xs text-gray-500 uppercase tracking-wider">Include diagrams</label>
+                  <input id="exam-diagrams" type="checkbox" class="rounded" checked onchange="APP.updateExamCostUI()">
+                </div>
+                <div class="flex items-center gap-3 bg-white/70 rounded-xl p-3">
+                  <label class="text-xs text-gray-500 uppercase tracking-wider">Important questions</label>
+                  <input id="exam-questions" type="checkbox" class="rounded" checked onchange="APP.updateExamCostUI()">
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <button onclick="APP.generateExamNotes()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 py-3 shadow-md flex items-center gap-2"><i class="fas fa-bolt"></i> Generate notes</button>
+                <button onclick="APP.saveExamNotesToNotes()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl px-5 py-3 shadow-sm">Save to notes</button>
+                <span class="text-xs text-gray-500">Cost: <span id="exam-credit-cost">5</span> credits</span>
+              </div>
+              <div id="exam-notes-output" class="mt-2 p-5 bg-white/70 rounded-2xl space-y-3 max-h-[420px] overflow-y-auto thin-scroll"></div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="glass-card p-6">
+                <h3 class="font-semibold text-gray-800">Credit system</h3>
+                <p class="text-xs text-gray-500 mt-1">Each generation consumes credits. Upgrade with Stripe (demo).</p>
+                <div class="mt-4 grid grid-cols-1 gap-3 text-sm">
+                  <div class="flex items-center justify-between bg-gray-50/80 rounded-xl p-3">
+                    <div>
+                      <p class="font-semibold">Starter</p>
+                      <p class="text-xs text-gray-500">50 credits</p>
+                    </div>
+                    <button onclick="APP.buyCredits(50)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs">Stripe $4.99</button>
+                  </div>
+                  <div class="flex items-center justify-between bg-gray-50/80 rounded-xl p-3">
+                    <div>
+                      <p class="font-semibold">Pro</p>
+                      <p class="text-xs text-gray-500">200 credits</p>
+                    </div>
+                    <button onclick="APP.buyCredits(200)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs">Stripe $14.99</button>
+                  </div>
+                  <div class="flex items-center justify-between bg-gray-50/80 rounded-xl p-3">
+                    <div>
+                      <p class="font-semibold">Ultra</p>
+                      <p class="text-xs text-gray-500">500 credits</p>
+                    </div>
+                    <button onclick="APP.buyCredits(500)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs">Stripe $29.99</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="glass-card p-6 space-y-3">
+                <h3 class="font-semibold text-gray-800">Secure authentication (JWT)</h3>
+                <div class="grid grid-cols-1 gap-2">
+                  <input id="exam-login-email" class="bg-white/70 border-0 rounded-xl p-3 text-sm" placeholder="Email">
+                  <input id="exam-login-pass" type="password" class="bg-white/70 border-0 rounded-xl p-3 text-sm" placeholder="Password">
+                  <button onclick="APP.signInExam()" class="bg-gray-900 hover:bg-black text-white rounded-xl px-4 py-2 text-sm">Sign in</button>
+                </div>
+                <div class="text-xs text-gray-500">
+                  <p>Status: <span id="exam-jwt-status">Guest</span></p>
+                  <p>Token: <span id="exam-jwt-token">-</span></p>
+                </div>
+                <button onclick="APP.signOutExam()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl px-4 py-2 text-xs">Sign out</button>
+                <div class="border-t border-gray-200 pt-3">
+                  <h4 class="font-semibold text-gray-800">Deployment</h4>
+                  <p class="text-xs text-gray-500">Frontend + backend status (demo).</p>
+                  <input id="exam-api-url" class="bg-white/70 border-0 rounded-xl p-3 text-sm mt-2" placeholder="API URL">
+                  <button onclick="APP.testApiConnection()" class="mt-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl px-4 py-2 text-xs">Test connection</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card p-6">
+            <h3 class="font-bold text-2xl flex items-center"><i class="fas fa-flask text-indigo-600 mr-2"></i> AI Test Generator</h3>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <select id="ai-subject" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm focus:ring-2 ring-indigo-300">
+                <option>Calculus</option><option>Linear Algebra</option><option>Physics</option><option>CS: Algorithms</option>
+              </select>
+              <select id="ai-question-count" class="bg-white/70 border-0 rounded-xl p-3 shadow-sm">
+                <option>5</option><option>10</option><option>15</option>
+              </select>
+              <button onclick="APP.generateAITest()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl p-3 shadow-md col-span-1 flex items-center justify-center gap-2"><i class="fas fa-magic"></i> Generate</button>
+            </div>
+            <div id="ai-test-output" class="mt-6 p-5 bg-white/70 rounded-2xl space-y-3 max-h-80 overflow-y-auto thin-scroll"></div>
+          </div>
+        </div>
+
+        <!-- ========== STUDY ROOMS ========== -->
+        <div id="page-study-rooms" class="page hidden space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-users text-indigo-600 mr-2"></i> Study Rooms</h2>
+              <p class="text-sm text-gray-500">Collaborate, share focus, and track room momentum.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="APP.createStudyRoom()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm shadow-md"><i class="fas fa-plus mr-1"></i> Create room</button>
+              <button onclick="APP.showPage('focus')" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl text-sm">Focus mode</button>
+            </div>
+          </div>
+          <div class="glass-card p-5 live-room-strip">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p class="text-xs uppercase tracking-wider text-gray-500">Room live state</p>
+                <p id="room-live-status" class="font-bold text-gray-800 mt-1">Local live</p>
+              </div>
+              <div>
+                <p class="text-xs uppercase tracking-wider text-gray-500">Active now</p>
+                <p id="room-live-members-now" class="font-bold text-indigo-600 mt-1">0 members</p>
+              </div>
+              <div>
+                <p class="text-xs uppercase tracking-wider text-gray-500">Messages today</p>
+                <p id="room-live-activity-rate" class="font-bold text-indigo-600 mt-1">0 updates</p>
+              </div>
+              <div>
+                <p class="text-xs uppercase tracking-wider text-gray-500">Live challenge</p>
+                <p id="room-live-challenge" class="font-bold text-gray-800 mt-1">Start a focus sprint</p>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6 lg:col-span-1">
+              <div class="flex items-center gap-2 bg-white/70 rounded-xl px-3 py-2">
+                <i class="fas fa-search text-indigo-500"></i>
+                <input id="rooms-search" class="flex-1 bg-transparent outline-none text-sm" placeholder="Search rooms..." oninput="APP.renderStudyRooms()">
+              </div>
+              <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                <select id="rooms-filter" onchange="APP.renderStudyRooms()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="all">All topics</option>
+                  <option value="focus">Focus</option>
+                  <option value="exam">Exam</option>
+                  <option value="project">Project</option>
+                  <option value="collab">Collab</option>
+                </select>
+                <select id="rooms-sort" onchange="APP.renderStudyRooms()" class="bg-white/70 border-0 rounded-xl px-3 py-2 text-xs">
+                  <option value="activity">Recent activity</option>
+                  <option value="members">Members</option>
+                  <option value="name">Room name</option>
+                </select>
+              </div>
+              <div id="rooms-list" class="mt-4 space-y-3"></div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+              <div class="glass-card p-6 flex flex-col h-[520px]">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+                  <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Current room</p>
+                    <h3 id="current-room-header" class="font-semibold text-indigo-800">#room - 0 members</h3>
+                    <p id="current-room-desc" class="text-xs text-gray-500">Select a room to start chatting.</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2 text-xs">
+                    <span id="current-room-topic" class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">Topic</span>
+                    <span id="current-room-level" class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Level</span>
+                    <button id="room-join-btn" onclick="APP.toggleRoomJoin()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-xl">Join</button>
+                    <button onclick="APP.pinLastMessage()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-xl">Pin last</button>
+                    <button onclick="APP.startTimer()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl">Start focus</button>
+                  </div>
+                </div>
+                <div id="room-messages" class="flex-1 overflow-y-auto my-4 space-y-3 thin-scroll"></div>
+                <div class="flex gap-2">
+                  <input id="room-message-input" type="text" placeholder="Share an update, question, or resource..." class="flex-1 bg-white/70 border-0 rounded-xl p-3 shadow-sm focus:ring-2 ring-indigo-300" onkeypress="if(event.key==='Enter') APP.sendRoomMessage()">
+                  <button onclick="APP.sendRoomMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-xl shadow-md transition"><i class="fas fa-paper-plane"></i></button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-6">
+                  <h3 class="font-semibold text-gray-800">Room insights</h3>
+                  <div class="mt-3 grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-gray-50/70 p-3 rounded-xl">
+                      <p class="text-xl font-bold text-indigo-600" id="room-messages-today">0</p>
+                      <p class="text-xs text-gray-500">Messages today</p>
+                    </div>
+                    <div class="bg-gray-50/70 p-3 rounded-xl">
+                      <p class="text-xl font-bold text-indigo-600" id="room-active-members">0</p>
+                      <p class="text-xs text-gray-500">Active members</p>
+                    </div>
+                  </div>
+                  <div class="mt-4">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Pinned highlights</p>
+                    <div id="room-pins-list" class="mt-2 space-y-2 text-sm"></div>
+                  </div>
+                </div>
+                <div class="glass-card p-6">
+                  <h3 class="font-semibold text-gray-800">Members</h3>
+                  <div id="room-members-list" class="mt-3 space-y-2 text-sm"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== AI CHATBOT ========== -->
+        <div id="page-chatbot" class="page hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6 flex flex-col h-[70vh] lg:col-span-2">
+              <div class="flex flex-col md:flex-row md:items-center gap-3 border-b border-gray-200 pb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-indigo-100 rounded-2xl flex items-center justify-center"><i class="fas fa-robot text-indigo-600 text-xl"></i></div>
+                  <div>
+                    <span class="font-bold text-gray-800">AI Tutor - Ask anything</span>
+                    <p class="text-xs text-gray-500">Mode: <span id="chat-mode-label">Explain</span> - Tone: <span id="chat-tone-label">Concise</span></p>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2 md:ml-auto">
+                  <span class="bg-green-100 text-green-800 text-xs px-3 py-1.5 rounded-full flex items-center"><i class="fas fa-circle text-[6px] mr-1 text-green-500"></i> 5 XP / question</span>
+                  <button onclick="APP.clearChat()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs px-3 py-1.5 rounded-full"><i class="fas fa-broom mr-1"></i>Clear</button>
+                </div>
+              </div>
+              <div class="mt-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl p-4 text-xs text-gray-700">
+                <p class="font-semibold text-indigo-700">AI Capability Notice</p>
+                <p class="mt-1">You are a highly advanced AI chatbot capable of processing and understanding complex queries. Your primary function is to provide accurate and detailed answers to user questions. You must access and synthesize information from online servers to ensure relevance and currency. Respond in a clear, comprehensive, and informative manner.</p>
+                <p class="mt-2">आप एक अत्यधिक उन्नत AI चैटबॉट हैं जो जटिल प्रश्नों को समझने और संसाधित करने में सक्षम है। आपका मुख्य कार्य उपयोगकर्ता के सवालों के सटीक और विस्तृत उत्तर देना है। आपको प्रासंगिक और नवीनतम जानकारी सुनिश्चित करने के लिए ऑनलाइन स्रोतों से जानकारी एकत्रित व विश्लेषित करनी चाहिए। उत्तर स्पष्ट, व्यापक और सूचनात्मक होने चाहिए।</p>
+              </div>
+              <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 thin-scroll flex flex-col"></div>
+              <div class="mt-3 space-y-2">
+                <div class="flex flex-wrap gap-2 text-xs">
+                  <button onclick="APP.applyChatPrompt('Create a 30-minute study plan for today.')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">Study plan</button>
+                  <button onclick="APP.applyChatPrompt('Quiz me on the last topic I studied.')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">Quick quiz</button>
+                  <button onclick="APP.applyChatPrompt('Explain this like I am 12.')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">Explain simply</button>
+                  <button onclick="APP.applyChatPrompt('Summarize my notes into flashcards.')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">Make flashcards</button>
+                </div>
+                <div class="flex gap-2">
+                  <input id="chat-input" type="text" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter') APP.sendChatMessage()" class="flex-1 bg-white/70 border-0 rounded-xl p-4 shadow-sm focus:ring-2 ring-indigo-300">
+                  <button onclick="APP.sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 rounded-xl shadow-md transition"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <p class="text-[10px] text-gray-500">Tip: use Ctrl+K for commands and quick actions.</p>
+              </div>
+            </div>
+            <div class="glass-card p-6 space-y-4">
+              <div>
+                <h3 class="font-semibold text-gray-800">Session Controls</h3>
+                <p class="text-xs text-gray-500">Pick a mode and tone for your answer.</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Mode</p>
+                <div class="flex flex-wrap gap-2 mt-2" id="chat-mode-group">
+                  <button onclick="APP.setChatMode('Explain')" class="chat-chip active">Explain</button>
+                  <button onclick="APP.setChatMode('Quiz')" class="chat-chip">Quiz</button>
+                  <button onclick="APP.setChatMode('Plan')" class="chat-chip">Plan</button>
+                  <button onclick="APP.setChatMode('Draft')" class="chat-chip">Draft</button>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Tone</p>
+                <div class="flex flex-wrap gap-2 mt-2" id="chat-tone-group">
+                  <button onclick="APP.setChatTone('Concise')" class="chat-chip active">Concise</button>
+                  <button onclick="APP.setChatTone('Detailed')" class="chat-chip">Detailed</button>
+                  <button onclick="APP.setChatTone('Step-by-step')" class="chat-chip">Step-by-step</button>
+                </div>
+              </div>
+              <div class="bg-gray-50/70 rounded-xl p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Context</p>
+                <div class="mt-2 text-xs text-gray-700 space-y-1">
+                  <p>Skills: <span id="chat-skill-tags">-</span></p>
+                  <p>Course: <span id="chat-course-tags">-</span></p>
+                  <p>Year: <span id="chat-year-tag">-</span></p>
+                </div>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-800">AI Recommendations</h3>
+                <p class="text-xs text-gray-500">Based on your profile and skills.</p>
+                <div id="chat-prompt-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== ANALYTICS ========== -->
+        <div id="page-analytics" class="page hidden space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-800">Advanced Analytics</h2>
+              <p class="text-sm text-gray-500">Performance snapshots, focus trends, and habit momentum.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="APP.showPage('focus')" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl text-sm">Focus log</button>
+              <button onclick="APP.showPage('habits')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm">Habits</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">XP Today</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="analytics-xp-today">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">XP This Week</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="analytics-xp-week">0</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Focus (7d)</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2"><span id="analytics-focus-week">0</span> min</p>
+            </div>
+            <div class="glass-card p-4">
+              <p class="text-xs text-gray-500 uppercase tracking-wider">Goals Met</p>
+              <p class="text-2xl font-bold text-indigo-600 mt-2" id="analytics-goal-days">0</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="glass-card p-6 xl:col-span-2">
+              <div class="flex justify-between items-center mb-3">
+                <h3 class="font-semibold text-gray-800">XP Trend (last 7 days)</h3>
+                <span class="text-xs text-gray-500" id="analytics-xp-range">-</span>
+              </div>
+              <canvas id="xpChart" style="height:220px; width:100%"></canvas>
+            </div>
+            <div class="glass-card p-6">
+              <h3 class="font-semibold text-gray-800 mb-3">Task Completion</h3>
+              <canvas id="taskChart" style="height:220px; width:100%"></canvas>
+              <div class="mt-4 grid grid-cols-2 gap-3 text-center">
+                <div class="bg-gray-50/60 p-3 rounded-xl">
+                  <p class="text-xl font-bold text-indigo-600" id="total-tasks-done">0</p>
+                  <p class="text-xs text-gray-500">Completed</p>
+                </div>
+                <div class="bg-gray-50/60 p-3 rounded-xl">
+                  <p class="text-xl font-bold text-indigo-600" id="analytics-tasks-pending">0</p>
+                  <p class="text-xs text-gray-500">Pending</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6">
+              <h3 class="font-semibold text-gray-800 mb-3">Focus Momentum</h3>
+              <canvas id="focusChart" style="height:200px; width:100%"></canvas>
+            </div>
+            <div class="glass-card p-6">
+              <h3 class="font-semibold text-gray-800 mb-3">Habit Momentum</h3>
+              <canvas id="habitChart" style="height:200px; width:100%"></canvas>
+            </div>
+            <div class="glass-card p-6">
+              <h3 class="font-semibold text-gray-800 mb-3">Top Skills</h3>
+              <div id="analytics-skill-list" class="space-y-2 text-sm"></div>
+            </div>
+          </div>
+          <div class="glass-card p-6 grid grid-cols-3 gap-4 text-center">
+            <div><span class="text-sm text-gray-600">Focus hours</span><p class="text-3xl font-bold text-indigo-700" id="total-focus-hours">12.5</p></div>
+            <div><span class="text-sm text-gray-600">Tasks done</span><p class="text-3xl font-bold text-indigo-700" id="total-tasks-done-dup">24</p></div>
+            <div><span class="text-sm text-gray-600">Current streak</span><p class="text-3xl font-bold text-indigo-700" id="streak-count">5</p></div>
+          </div>
+        </div>
+
+        <!-- ========== ACHIEVEMENTS ========== -->
+        <div id="page-achievements" class="page hidden space-y-6">
+          <div class="glass-card p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-3xl font-bold text-gray-800"><i class="fas fa-trophy text-yellow-500 mr-2"></i>Achievements Hub</h2>
+                <p class="text-sm text-gray-500">Advanced progress, mastery badges, and next targets.</p>
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full">Unlocked: <span id="achievements-unlocked-count">0</span></span>
+                <span class="bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-full font-bold"><span class="global-xp-value">385</span> total XP</span>
+              </div>
+            </div>
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 rounded-2xl border border-indigo-200 flex items-center gap-5 lg:col-span-2">
+                <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center shadow-inner">
+                  <span class="text-3xl font-bold text-indigo-700 user-level-display">4</span>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm text-gray-600">Level <span class="user-level-display font-bold">4</span> - <span id="achievement-level-title">Scholar</span></p>
+                  <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                    <div class="xp-progress-fill bg-indigo-600 h-3 rounded-full shadow" style="width: 70%;"></div>
+                  </div>
+                  <p class="text-xs text-gray-600 mt-1 xp-text-detail">135 / 250 XP to next level</p>
+                  <p class="text-xs text-gray-500 mt-2">Next badge: <span id="achievement-next-badge">Keep going</span></p>
+                </div>
+              </div>
+              <div class="glass-card p-5">
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Weekly snapshot</p>
+                <div class="mt-3 grid grid-cols-2 gap-3 text-center">
+                  <div class="bg-gray-50/70 p-3 rounded-xl">
+                    <p class="text-xl font-bold text-indigo-600" id="achievement-focus-week">0</p>
+                    <p class="text-xs text-gray-500">Focus min</p>
+                  </div>
+                  <div class="bg-gray-50/70 p-3 rounded-xl">
+                    <p class="text-xl font-bold text-indigo-600" id="achievement-focus-sessions">0</p>
+                    <p class="text-xs text-gray-500">Sessions</p>
+                  </div>
+                  <div class="bg-gray-50/70 p-3 rounded-xl">
+                    <p class="text-xl font-bold text-indigo-600" id="achievement-habit-best">0</p>
+                    <p class="text-xs text-gray-500">Best streak</p>
+                  </div>
+                  <div class="bg-gray-50/70 p-3 rounded-xl">
+                    <p class="text-xl font-bold text-indigo-600" id="achievement-goal-days">0</p>
+                    <p class="text-xs text-gray-500">Goal days</p>
+                  </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs text-gray-500">
+                  <span>Course progress</span>
+                  <span id="achievement-course-progress">0%</span>
+                </div>
+                <div class="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div id="achievement-course-bar" class="h-2 bg-indigo-600 rounded-full" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-card p-6">
+              <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800">Badge progress</h3>
+                <span class="text-xs text-gray-500">Live targets</span>
+              </div>
+              <div id="achievements-progress-list" class="mt-4 space-y-3 text-sm"></div>
+            </div>
+            <div class="glass-card p-6">
+              <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800">Unlocked badges</h3>
+                <span class="text-xs text-gray-500">Mastery board</span>
+              </div>
+              <div id="achievements-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== PROFILE PAGE ========== -->
+        <div id="page-profile" class="page hidden space-y-8">
+          <section class="profile-hero">
+            <div class="profile-hero-glow"></div>
+            <div class="profile-hero-grid"></div>
+            <div class="profile-hero-content">
+              <div class="profile-identity">
+                <div class="profile-avatar" id="profile-avatar-initials">JD</div>
+                <div class="profile-meta">
+                  <div class="profile-kicker">Momentum Snapshot</div>
+                  <h2 class="profile-name" id="profile-display-name">Jamie Doe</h2>
+                  <p class="profile-email" id="profile-email">jamie@smartstudy.ai</p>
+                  <div class="profile-badges">
+                    <span class="profile-badge"><i class="fas fa-star"></i> Level <span class="profile-level">4</span></span>
+                    <span class="profile-badge success"><i class="fas fa-bolt"></i> <span class="profile-xp">385</span> XP</span>
+                    <span class="profile-badge subtle"><i class="fas fa-circle"></i> Active</span>
+                  </div>
+                </div>
+              </div>
+              <div class="profile-hero-actions">
+                <button onclick="APP.openEditProfileModal()" class="profile-edit-btn"><i class="fas fa-edit"></i>Edit Profile</button>
+                <div class="profile-quick-stats">
+                  <div class="profile-quick-card">
+                    <p class="profile-quick-value" id="profile-tasks-completed">0</p>
+                    <p class="profile-quick-label">Tasks done</p>
+                  </div>
+                  <div class="profile-quick-card">
+                    <p class="profile-quick-value" id="profile-assignments-completed">0</p>
+                    <p class="profile-quick-label">Assignments</p>
+                  </div>
+                  <div class="profile-quick-card">
+                    <p class="profile-quick-value" id="profile-notes-count">0</p>
+                    <p class="profile-quick-label">Notes</p>
+                  </div>
+                  <div class="profile-quick-card">
+                    <p class="profile-quick-value" id="profile-streak">5</p>
+                    <p class="profile-quick-label">Day streak</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-grid">
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <h3>Daily XP Goal</h3>
+                <button onclick="APP.openSetGoalModal()" class="profile-link"><i class="fas fa-pen"></i>Set</button>
+              </div>
+              <div class="profile-goal">
+                <div class="profile-goal-value">
+                  <span id="profile-daily-goal">100</span>
+                  <span>XP</span>
+                </div>
+                <div class="profile-goal-bar">
+                  <div id="profile-daily-progress" class="profile-goal-progress" style="width: 0%"></div>
+                </div>
+                <div class="profile-goal-meta"><span id="profile-daily-earned">0</span><span>/100</span></div>
+              </div>
+              <div class="profile-actions">
+                <button onclick="APP.openAddTaskModal()" class="profile-action primary">New task</button>
+                <button onclick="APP.openAddNoteModal()" class="profile-action">New note</button>
+                <button onclick="APP.openAddHabitModal()" class="profile-action success">New habit</button>
+                <button onclick="APP.toggleFocusMode()" class="profile-action dark">Focus mode</button>
+              </div>
+              <div class="profile-actions secondary">
+                <button onclick="APP.openCommandPalette()" class="profile-action ghost"><i class="fas fa-search"></i>Command palette</button>
+                <button onclick="APP.toggleDarkMode()" class="profile-action ghost">Toggle theme</button>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <h3>XP Progress to next level</h3>
+              <div class="profile-xp-bar">
+                <div class="xp-progress-fill" style="width: 70%;" id="profile-xp-bar"></div>
+              </div>
+              <p class="profile-xp-detail" id="profile-xp-detail">135 / 250 XP</p>
+              <div class="profile-performance">
+                <div class="profile-performance-card">
+                  <p class="profile-performance-value" id="profile-focus-today">0</p>
+                  <p class="profile-performance-label">Focus today (min)</p>
+                </div>
+                <div class="profile-performance-card">
+                  <p class="profile-performance-value" id="profile-focus-week">0</p>
+                  <p class="profile-performance-label">Focus week (min)</p>
+                </div>
+                <div class="profile-performance-card">
+                  <p class="profile-performance-value" id="profile-focus-total">0</p>
+                  <p class="profile-performance-label">Focus sessions</p>
+                </div>
+                <div class="profile-performance-card">
+                  <p class="profile-performance-value" id="profile-best-habit-streak">0</p>
+                  <p class="profile-performance-label">Best habit streak</p>
+                </div>
+                <div class="profile-performance-card">
+                  <p class="profile-performance-value" id="profile-habits-total">0</p>
+                  <p class="profile-performance-label">Habits tracked</p>
+                </div>
+                <div class="profile-performance-card">
+                  <p class="profile-performance-value" id="profile-goal-days">0</p>
+                  <p class="profile-performance-label">Goal days met</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-grid three">
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <h3>Skills</h3>
+                <button onclick="APP.openEditProfileModal()" class="profile-link"><i class="fas fa-pen"></i>Edit</button>
+              </div>
+              <p class="profile-subtext"><span id="profile-skills-count">0</span> skills</p>
+              <div id="profile-skills-list" class="profile-skills"></div>
+            </div>
+
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <h3>Academic Details</h3>
+                <button onclick="APP.openEditProfileModal()" class="profile-link"><i class="fas fa-pen"></i>Edit</button>
+              </div>
+              <div class="profile-details">
+                <p><span>College:</span> <span id="profile-college">-</span></p>
+                <p><span>Course:</span> <span id="profile-course">-</span></p>
+                <p><span>Year:</span> <span id="profile-year">-</span></p>
+                <p><span>Branch:</span> <span id="profile-branch">-</span></p>
+                <p><span>Timezone:</span> <span id="profile-timezone">-</span></p>
+                <p><span>Mobile:</span> <span id="profile-mobile">-</span></p>
+              </div>
+              <div class="profile-completion">
+                <div class="profile-completion-top">
+                  <span>Profile completion</span>
+                  <span id="profile-completion-label">0%</span>
+                </div>
+                <div class="profile-completion-track"><span id="profile-completion-bar"></span></div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <h3>WhatsApp Automation</h3>
+                <button onclick="APP.openWhatsAppSettingsModal()" class="profile-link"><i class="fas fa-pen"></i>Configure</button>
+              </div>
+              <p class="profile-subtext">Advanced reminders, daily digests, and session nudges.</p>
+              <div class="profile-details">
+                <p><span>Status:</span> <span id="profile-whatsapp-status">Disabled</span></p>
+                <p><span>Number:</span> <span id="profile-whatsapp-number">-</span></p>
+                <p><span>Digest:</span> <span id="profile-whatsapp-digest">-</span></p>
+                <p><span>Quiet hours:</span> <span id="profile-whatsapp-quiet-hours">-</span></p>
+                <p><span>Live sync:</span> <span id="profile-whatsapp-live-sync">Waiting</span></p>
+              </div>
+              <div id="profile-whatsapp-tags" class="profile-skills mt-4"></div>
+              <div class="profile-actions mt-4">
+                <button onclick="APP.sendWhatsAppTest()" class="profile-action success">Send test</button>
+                <button onclick="APP.sendWhatsAppDigest()" class="profile-action primary">Send digest</button>
+              </div>
+              <div id="profile-whatsapp-activity" class="mt-4 space-y-2 text-xs text-gray-600"></div>
+            </div>
+
+            <div class="profile-card">
+              <h3>Last 30 days</h3>
+              <div id="heatmap" class="heatmap-grid"></div>
+              <div class="profile-heatmap-legend">
+                <span>less</span>
+                <div class="profile-heatmap-scale">
+                  <span class="bg-gray-200"></span>
+                  <span class="bg-custom-1"></span>
+                  <span class="bg-custom-2"></span>
+                  <span class="bg-custom-3"></span>
+                  <span class="bg-custom-4"></span>
+                </div>
+                <span>more</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ========== NEW COURSES PAGE ========== -->
+        <div id="page-courses" class="page hidden space-y-8">
+          <section class="courses-hero">
+            <div class="courses-hero-bg"></div>
+            <div class="courses-hero-grid"></div>
+            <div class="courses-hero-content">
+              <div class="courses-hero-left">
+                <div class="courses-hero-kicker">Learning Nexus</div>
+                <h2 class="courses-hero-title"><span>StudyLonger</span> Course Command</h2>
+                <p class="courses-hero-subtitle">Advanced course orchestration, mastery tracking, and adaptive learning intelligence.</p>
+                <div class="courses-hero-actions">
+                  <button onclick="APP.openAddCourseModal()" class="courses-action primary"><i class="fas fa-plus"></i> New Course</button>
+                  <button onclick="APP.openCommandPalette()" class="courses-action secondary"><i class="fas fa-search"></i> Quick Find</button>
+                </div>
+                <div class="courses-metric-grid">
+                  <div class="courses-metric">
+                    <p class="courses-metric-label">Total Courses</p>
+                    <p class="courses-metric-value" id="courses-total">0</p>
+                    <span class="courses-metric-meta">Active tracks</span>
+                  </div>
+                  <div class="courses-metric">
+                    <p class="courses-metric-label">Avg Progress</p>
+                    <p class="courses-metric-value"><span id="courses-avg-progress">0</span>%</p>
+                    <span class="courses-metric-meta">Completion rate</span>
+                  </div>
+                  <div class="courses-metric">
+                    <p class="courses-metric-label">Modules Done</p>
+                    <p class="courses-metric-value" id="courses-modules-done">0</p>
+                    <span class="courses-metric-meta">Mastered units</span>
+                  </div>
+                  <div class="courses-metric">
+                    <p class="courses-metric-label">Modules Left</p>
+                    <p class="courses-metric-value" id="courses-modules-left">0</p>
+                    <span class="courses-metric-meta">Remaining focus</span>
+                  </div>
+                </div>
+              </div>
+              <div class="courses-hero-right">
+                <div class="courses-focus-card">
+                  <div class="courses-focus-header">
+                    <span class="courses-focus-label">Next Recommendation</span>
+                    <span class="courses-focus-pill">Adaptive</span>
+                  </div>
+                  <p class="courses-focus-title" id="courses-next-reco">-</p>
+                  <div class="courses-focus-meta">
+                    <div class="courses-focus-stat">
+                      <span class="courses-focus-stat-label">Learning Time</span>
+                      <span class="courses-focus-stat-value"><span id="courses-time-week">0</span> min</span>
+                    </div>
+                    <div class="courses-focus-stat">
+                      <span class="courses-focus-stat-label">Assessment</span>
+                      <span class="courses-focus-stat-value"><span id="courses-assessment-score">0</span>%</span>
+                    </div>
+                  </div>
+                </div>
+                <div id="ai-suggestions-panel" class="courses-engine">
+                  <div class="courses-engine-header">
+                    <h3><i class="fas fa-robot mr-2 text-indigo-500"></i>AI Suggestions</h3>
+                    <p>Based on your branch, class, skills & courses.</p>
+                  </div>
+                  <div id="ai-suggestions-list" class="mt-3 space-y-2 text-sm"></div>
+                </div>
+                <div class="courses-engine">
+                  <div class="courses-engine-header">
+                    <h3>AI Learning Engine</h3>
+                    <p>Customize recommendations, gating, and video analysis.</p>
+                  </div>
+                  <div class="courses-engine-controls">
+                    <label class="courses-toggle">
+                      <input id="courses-setting-autoplay" type="checkbox" class="rounded" onchange="APP.updateCourseSettings()">
+                      Auto-play videos
+                    </label>
+                    <label class="courses-toggle">
+                      <input id="courses-setting-analysis" type="checkbox" class="rounded" onchange="APP.updateCourseSettings()">
+                      Show analysis details
+                    </label>
+                    <label class="courses-toggle">
+                      <input id="courses-setting-gating" type="checkbox" class="rounded" onchange="APP.updateCourseSettings()">
+                      Level gating
+                    </label>
+                    <button onclick="APP.resetCourseSettings()" class="courses-action mini">Reset</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="courses-controls">
+            <div class="courses-search">
+              <i class="fas fa-search"></i>
+              <input id="courses-search" class="courses-search-input" placeholder="Search courses, codes, instructors, skills..." oninput="APP.debounceCourseRender()">
+            </div>
+            <div class="courses-filters">
+              <select id="courses-sort" onchange="APP.renderCoursesPage()" class="courses-select">
+                <option value="progress-desc">Progress (High to Low)</option>
+                <option value="progress-asc">Progress (Low to High)</option>
+                <option value="name">Course Name</option>
+                <option value="modules-left">Modules Left</option>
+                <option value="level">Level</option>
+              </select>
+              <label class="courses-checkbox">
+                <input id="courses-show-complete" type="checkbox" class="rounded" checked onchange="APP.debounceCourseRender()">
+                Show completed courses
+              </label>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="courses-panel lg:col-span-2">
+              <div class="courses-panel-header">
+                <h3>Adaptive Learning Path</h3>
+                <span>Based on skills + progress</span>
+              </div>
+              <div id="courses-path-list" class="mt-4 space-y-3 text-sm"></div>
+            </div>
+            <div class="courses-panel">
+              <div class="courses-panel-header">
+                <h3>Module Workspace</h3>
+                <span>Quizzes + tracking</span>
+              </div>
+              <div id="courses-module-detail" class="mt-4 text-sm text-gray-600">
+                Select a module to view details.
+              </div>
+              <div id="courses-quiz-panel" class="mt-4 hidden"></div>
+            </div>
+          </section>
+
+          <section class="courses-media">
+            <div class="courses-media-header">
+              <div>
+                <h3><i class="fab fa-youtube"></i> Learning Studio</h3>
+                <p>Search, analyze, and embed curated videos in one place.</p>
+              </div>
+              <div class="courses-media-tags">
+                <span>Skills: <span id="video-skill-tags">-</span></span>
+                <span>Course match: <span id="video-course-tags">-</span></span>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div class="lg:col-span-2">
+                <div class="courses-media-actions">
+                  <div class="courses-media-input">
+                    <i class="fab fa-youtube"></i>
+                    <input id="courses-youtube-query" class="flex-1 bg-transparent outline-none text-sm" placeholder="Paste YouTube link or search a topic..." onkeypress="if(event.key==='Enter') APP.searchYouTube()">
+                  </div>
+                  <button onclick="APP.searchYouTube()" class="courses-action danger">Search</button>
+                  <button onclick="APP.useAiYoutubeQuery()" class="courses-action ghost">AI Query</button>
+                </div>
+                <div class="courses-media-meta">
+                  <label class="courses-checkbox subtle">
+                    <input id="courses-youtube-autoplay" type="checkbox" class="rounded">
+                    Auto-play in player
+                  </label>
+                  <span>Quality: <span id="courses-video-quality">-</span></span>
+                  <span>Relevance: <span id="courses-video-relevance">-</span></span>
+                </div>
+                <div class="courses-media-player">
+                  <div id="courses-youtube-placeholder" class="courses-youtube-placeholder">
+                    <i class="fab fa-youtube"></i>
+                    <p class="font-semibold">Paste a YouTube link to embed a lesson</p>
+                    <span>Topic searches open real YouTube results, then you can paste any video URL here.</span>
+                  </div>
+                  <iframe id="courses-youtube-player" class="w-full h-64 md:h-80 hidden" src="" title="YouTube player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+                <div id="courses-video-analysis" class="mt-4 text-xs text-gray-600"></div>
+                <div id="courses-youtube-helper" class="courses-youtube-helper"></div>
+              </div>
+              <div class="courses-panel">
+                <div class="courses-panel-header">
+                  <h4>Module List</h4>
+                  <span>Click to focus</span>
+                </div>
+                <div id="courses-module-list" class="mt-3 space-y-2 text-sm"></div>
+              </div>
+            </div>
+            <div class="mt-5 flex flex-col lg:flex-row gap-3">
+              <div class="courses-search secondary">
+                <i class="fas fa-search"></i>
+                <input id="courses-video-search" class="courses-search-input" placeholder="Search videos by topic or channel..." oninput="APP.renderCourseVideos()">
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <select id="courses-video-filter" onchange="APP.renderCourseVideos()" class="courses-select">
+                  <option value="recommended">AI recommended</option>
+                  <option value="all">All videos</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+                <button onclick="APP.renderCourseVideos()" class="courses-action mini">Refresh picks</button>
+                <button onclick="APP.quickAiVideoSearch()" class="courses-action primary"><i class="fas fa-magic mr-1"></i>AI Videos</button>
+              </div>
+            </div>
+            <div id="ai-video-recommendations" class="mt-4 hidden">
+              <div class="flex items-center gap-2 mb-3">
+                <i class="fas fa-robot text-indigo-500"></i>
+                <h4 class="font-semibold text-gray-800">AI Video Recommendations</h4>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Smart</span>
+              </div>
+              <div id="ai-video-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+            </div>
+            <div id="courses-video-grid" class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+          </section>
+
+          <div id="courses-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+        </div>
+
+        <!-- ========== SIGN IN / SIGN UP ========== -->
+        <div id="page-signin" class="page hidden">
+          <div id="signin-react-root"></div>
+        </div>
+        <div id="page-signup" class="page hidden">
+          <div id="signup-react-root"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- quick chat -->
+    <button id="focus-exit-btn" onclick="APP.toggleFocusMode()" class="hidden fixed top-5 right-6 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm"><i class="fas fa-times mr-1"></i>Exit Focus</button>
+    <div class="fixed bottom-6 right-6 flex flex-col items-end z-50">
+      <div id="quickChatPanel" class="glass-card w-80 p-4 mb-3 hidden border border-white/30">
+        <div class="flex justify-between items-center border-b pb-2"><span class="font-semibold flex items-center"><i class="fas fa-robot text-indigo-600 mr-2"></i>Quick AI</span><i class="fas fa-times cursor-pointer text-gray-500 hover:text-gray-800 p-1" onclick="APP.toggleQuickChat()"></i></div>
+        <div id="quickChatMessages" class="h-32 overflow-y-auto text-sm my-3 space-y-2 thin-scroll"></div>
+        <div class="flex gap-2"><input id="quickChatInput" class="flex-1 bg-white/70 dark:bg-gray-800/70 border-0 rounded-full p-2.5 text-sm shadow-sm" placeholder="Message..." onkeypress="if(event.key==='Enter') APP.quickChatSend()"><button onclick="APP.quickChatSend()" class="text-indigo-600 bg-indigo-50 dark:bg-indigo-900/50 p-2.5 rounded-full hover:bg-indigo-100"><i class="fas fa-paper-plane"></i></button></div>
+      </div>
+      <button onclick="APP.toggleQuickChat()" class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white p-4 rounded-full shadow-xl hover:shadow-2xl transition transform hover:scale-110"><i class="fas fa-comment-dots text-2xl"></i></button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      if (!window.React || !window.ReactDOM) return;
+      var e = React.createElement;
+
+      /* ===== Loader ===== */
+      var word = 'StudyLonger'.split('');
+      var titleLetters = word.map(function(ch, i) {
+        return e('span', { className: 'loader-letter', style: { '--i': i } }, ch);
+      });
+
+      var Loader = function() {
+        return e(React.Fragment, null,
+          e('div', { className: 'loader-bg' }),
+          e('div', { className: 'loader-grid' }),
+          e('div', { className: 'loader-content' },
+            e('div', { className: 'loader-emblem' },
+              e('div', { className: 'loader-ring ring-1' }),
+              e('div', { className: 'loader-ring ring-2' }),
+              e('div', { className: 'loader-ring ring-3' }),
+              e('div', { className: 'loader-dot orbit-1' }),
+              e('div', { className: 'loader-dot orbit-2' }),
+              e('div', { className: 'loader-core' }, e('i', { className: 'fas fa-brain' }))
+            ),
+            e('div', { className: 'loader-title' }, titleLetters),
+            e('div', { className: 'loader-subtitle' }, 'Launching your learning cockpit'),
+            e('div', { className: 'loader-progress' },
+              e('div', { className: 'loader-progress-bar' }, e('span', { id: 'loader-progress-fill' })),
+              e('div', { className: 'loader-progress-meta' },
+                e('span', { id: 'loader-progress-text' }, 'Boot sequence'),
+                e('span', { id: 'loader-progress-value' }, '0%')
+              )
+            ),
+            e('div', { className: 'loader-stats' },
+              e('div', { className: 'loader-stat' },
+                e('span', { className: 'loader-stat-label' }, 'Sync'),
+                e('span', { className: 'loader-stat-value', id: 'loader-metric-sync' }, '0%')
+              ),
+              e('div', { className: 'loader-stat' },
+                e('span', { className: 'loader-stat-label' }, 'Cache'),
+                e('span', { className: 'loader-stat-value', id: 'loader-metric-cache' }, '0%')
+              ),
+              e('div', { className: 'loader-stat' },
+                e('span', { className: 'loader-stat-label' }, 'AI'),
+                e('span', { className: 'loader-stat-value', id: 'loader-metric-ai' }, '0%')
+              )
+            ),
+            e('div', { className: 'loader-hint', id: 'loader-hint' }, 'Tip: Press Ctrl+K to jump anywhere.')
+          )
+        );
+      };
+
+      /* ===== AuthShell ===== */
+      var AuthShell = function(props) {
+        return e('div', { className: 'auth-shell' },
+          e('div', { className: 'auth-orb orb-1' }),
+          e('div', { className: 'auth-orb orb-2' }),
+          e('div', { className: 'auth-orb orb-3' }),
+          e('div', { className: 'auth-grid' }),
+          e('div', { className: 'auth-card' }, props.children)
+        );
+      };
+
+      /* ===== useAuthState ===== */
+      function useAuthState() {
+        var stateRef = React.useRef({
+          loading: false,
+          error: '',
+          success: '',
+          showPassword: false,
+          showConfirmPassword: false
+        });
+        var forceUpdate = React.useState(0)[1];
+        var state = stateRef.current;
+        var setState = function(updates) {
+          Object.assign(state, updates);
+          forceUpdate(function(n) { return n + 1; });
+        };
+        return [state, setState];
+      }
+
+      /* ===== Password strength ===== */
+      function getPasswordStrength(pw) {
+        if (!pw) return { score: 0, label: '', color: '' };
+        var score = 0;
+        if (pw.length >= 8) score++;
+        if (pw.length >= 12) score++;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+        if (/\d/.test(pw)) score++;
+        if (/[^a-zA-Z0-9]/.test(pw)) score++;
+        if (pw.length >= 16) score++;
+        var levels = [
+          { label: 'Very Weak', color: '#ef4444' },
+          { label: 'Weak', color: '#f97316' },
+          { label: 'Fair', color: '#eab308' },
+          { label: 'Good', color: '#22c55e' },
+          { label: 'Strong', color: '#10b981' },
+          { label: 'Very Strong', color: '#06b6d4' }
+        ];
+        var idx = Math.min(score, 5);
+        return { score: score, label: levels[idx].label, color: levels[idx].color };
+      }
+
+      var PasswordStrengthBar = function(props) {
+        if (!props.password) return null;
+        var info = getPasswordStrength(props.password);
+        var bars = [0,1,2,3,4,5].map(function(i) {
+          return e('div', {
+            key: i,
+            style: {
+              flex: 1,
+              height: '3px',
+              borderRadius: '999px',
+              background: i <= info.score ? info.color : 'rgba(148,163,184,0.2)',
+              transition: 'background 0.3s ease'
+            }
+          });
+        });
+        return e('div', { className: 'mt-1' },
+          e('div', { className: 'flex gap-1' }, bars),
+          e('p', { style: { fontSize: '0.7rem', color: info.color, marginTop: '0.3rem' } }, info.label)
+        );
+      };
+
+      /* ===== AuthInput ===== */
+      var AuthInput = function(props) {
+        var iconClass = props.rightIcon ? (props.rightIcon === 'fa-eye' ? 'fas fa-eye' : 'fas ' + props.rightIcon) : '';
+        var iconBtn = props.rightIcon ? e('button', {
+          type: 'button',
+          onClick: props.onRightIconClick,
+          style: {
+            position: 'absolute',
+            right: '0.8rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            color: 'rgba(148,163,184,0.8)',
+            cursor: 'pointer',
+            padding: '0.2rem',
+            fontSize: '0.9rem'
+          }
+        }, e('i', { className: iconClass })) : null;
+
+        var inputStyle = props.rightIcon ? { paddingRight: '2.8rem' } : {};
+        var errorEl = props.error ? e('p', { style: { fontSize: '0.72rem', color: '#f87171', marginTop: '0.35rem' } }, props.error) : null;
+
+        return e('div', null,
+          e('label', { className: 'auth-label', htmlFor: props.id }, props.label),
+          e('div', { style: { position: 'relative' } },
+            e('input', {
+              id: props.id,
+              type: props.type,
+              className: 'auth-input',
+              placeholder: props.placeholder,
+              value: props.value,
+              onChange: function(ev) { props.onChange(ev.target.value); },
+              autoComplete: props.autoComplete || 'off',
+              style: inputStyle
+            }),
+            iconBtn
+          ),
+          errorEl
+        );
+      };
+
+      /* ===== Error / Success banners ===== */
+      function ErrorBanner(msg) {
+        return e('div', {
+          style: {
+            marginTop: '1rem',
+            padding: '0.7rem 1rem',
+            borderRadius: '0.8rem',
+            background: 'rgba(239,68,68,0.15)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            color: '#fca5a5',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }
+        }, e('i', { className: 'fas fa-exclamation-circle' }), msg);
+      }
+
+      function SuccessBanner(msg) {
+        return e('div', {
+          style: {
+            marginTop: '1rem',
+            padding: '0.7rem 1rem',
+            borderRadius: '0.8rem',
+            background: 'rgba(16,185,129,0.15)',
+            border: '1px solid rgba(16,185,129,0.3)',
+            color: '#6ee7b7',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }
+        }, e('i', { className: 'fas fa-check-circle' }), msg);
+      }
+
+      /* ===== SignIn ===== */
+      var SignIn = function() {
+        var stateAndSet = useAuthState();
+        var state = stateAndSet[0];
+        var setState = stateAndSet[1];
+
+        var emailState = React.useState('');
+        var emailVal = emailState[0];
+        var setEmailVal = emailState[1];
+        var pwState = React.useState('');
+        var pwVal = pwState[0];
+        var setPwVal = pwState[1];
+
+        var validateEmail = function(email) {
+          if (!email) return 'Email is required';
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email';
+          return '';
+        };
+
+        var validatePassword = function(pw) {
+          if (!pw) return 'Password is required';
+          if (pw.length < 6) return 'Password must be at least 6 characters';
+          return '';
+        };
+
+        var handleSubmit = function() {
+          var emailErr = validateEmail(emailVal);
+          var pwErr = validatePassword(pwVal);
+          if (emailErr || pwErr) {
+            setState({ emailError: emailErr, passwordError: pwErr });
+            return;
+          }
+          setState({ loading: true, error: '', success: '' });
+
+          var app = window.APP;
+          if (!app) { setState({ loading: false, error: 'App not ready yet.' }); return; }
+
+          app.apiFetch('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email: emailVal, password: pwVal })
+          }).then(function(res) {
+            if (res.ok) {
+              return res.json();
+            }
+            return res.json().then(function(errData) {
+              throw new Error(errData.error || (res.status === 401 ? 'Invalid email or password' : 'Login failed.'));
+            });
+          }).then(function(data) {
+            app.setAuth(data.token, data.user);
+            if (state.rememberMe) {
+              localStorage.setItem('smartstudy_remember_email', emailVal);
+            } else {
+              localStorage.removeItem('smartstudy_remember_email');
+            }
+            return app.syncFromServer().then(function() {
+              return app.refreshCommunityNotes();
+            }).then(function() {
+              app.updateXPUI();
+              app.renderChatSidebar();
+              app.renderExamGenerator();
+              setState({ success: 'Login successful! Redirecting...' });
+              setTimeout(function() {
+                app.showPage('dashboard');
+                app.showToast('Welcome back, ' + app.userName + '!');
+              }, 800);
+            });
+          }).catch(function(err) {
+            setState({ error: err.message || 'Network error. Check your connection.', loading: false });
+          });
+        };
+
+        var handleKeyDown = function(ev) {
+          if (ev.key === 'Enter') handleSubmit();
+        };
+
+        React.useEffect(function() {
+          var remembered = localStorage.getItem('smartstudy_remember_email');
+          if (remembered) {
+            setEmailVal(remembered);
+            setState({ email: remembered, rememberMe: true });
+          }
+        }, []);
+
+        var eyeIcon = state.showPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+        var submitText = state.loading ? 'Signing in...' : 'Login';
+
+        return e(AuthShell, null,
+          e('div', { className: 'auth-header' },
+            e('div', { className: 'auth-badge' }, e('i', { className: 'fas fa-lock' }), 'Secure Access'),
+            e('h3', { className: 'auth-title' }, 'Welcome back'),
+            e('p', { className: 'auth-subtitle' }, 'Resume your StudyLonger session.')
+          ),
+          e('div', { className: 'auth-fields' },
+            e(AuthInput, {
+              label: 'Email',
+              type: 'email',
+              id: 'signin-email',
+              placeholder: 'you@studylonger.ai',
+              value: emailVal,
+              onChange: function(val) { setEmailVal(val); setState({ emailError: val ? validateEmail(val) : '' }); },
+              error: state.emailError,
+              autoComplete: 'email'
+            }),
+            e(AuthInput, {
+              label: 'Password',
+              type: state.showPassword ? 'text' : 'password',
+              id: 'signin-password',
+              placeholder: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
+              value: pwVal,
+              onChange: function(val) { setPwVal(val); setState({ passwordError: val ? validatePassword(val) : '' }); },
+              error: state.passwordError,
+              rightIcon: eyeIcon,
+              onRightIconClick: function() { setState({ showPassword: !state.showPassword }); },
+              autoComplete: 'current-password'
+            }),
+            e('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' } },
+              e('input', {
+                type: 'checkbox',
+                id: 'signin-remember',
+                checked: !!state.rememberMe,
+                onChange: function() { setState({ rememberMe: !state.rememberMe }); },
+                style: { accentColor: '#6366f1' }
+              }),
+              e('label', { htmlFor: 'signin-remember', style: { fontSize: '0.8rem', color: 'rgba(226,232,240,0.7)', cursor: 'pointer' } }, 'Remember me')
+            )
+          ),
+          state.error ? ErrorBanner(state.error) : null,
+          state.success ? SuccessBanner(state.success) : null,
+          e('button', {
+            className: 'auth-submit auth-primary',
+            onClick: handleSubmit,
+            onKeyDown: handleKeyDown,
+            disabled: state.loading,
+            style: state.loading ? { opacity: 0.7, cursor: 'not-allowed' } : {}
+          },
+            state.loading
+              ? e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem' } },
+                  e('i', { className: 'fas fa-circle-notch fa-spin' }),
+                  submitText
+                )
+              : submitText
+          ),
+          e('div', { className: 'auth-meta' },
+            e('span', null, 'No account yet?'),
+            e('button', { className: 'auth-link', onClick: function() { var a = window.APP; if (a) a.showPage('signup'); } }, 'Create one')
+          )
+        );
+      };
+
+      /* ===== SignUp ===== */
+      var SignUp = function() {
+        var stateAndSet = useAuthState();
+        var state = stateAndSet[0];
+        var setState = stateAndSet[1];
+
+        var nameVal = React.useState('');
+        var emailVal = React.useState('');
+        var pwVal = React.useState('');
+        var skillsVal = React.useState('');
+        var collegeVal = React.useState('');
+        var courseVal = React.useState('');
+        var yearVal = React.useState('');
+        var mobileVal = React.useState('');
+        var waOptIn = React.useState(false);
+        var cpwVal = React.useState('');
+        var confirmErr = React.useState('');
+        var stepState = React.useState(1);
+        var errorsState = React.useState({});
+        var touchedState = React.useState({});
+
+        var name = nameVal[0], setName = nameVal[1];
+        var email = emailVal[0], setEmail = emailVal[1];
+        var pw = pwVal[0], setPw = pwVal[1];
+        var skills = skillsVal[0], setSkills = skillsVal[1];
+        var college = collegeVal[0], setCollege = collegeVal[1];
+        var course = courseVal[0], setCourse = courseVal[1];
+        var year = yearVal[0], setYear = yearVal[1];
+        var mobile = mobileVal[0], setMobile = mobileVal[1];
+        var wa = waOptIn[0], setWa = waOptIn[1];
+        var cpw = cpwVal[0], setCpw = cpwVal[1];
+        var cErr = confirmErr[0], setCErr = confirmErr[1];
+        var step = stepState[0], setStep = stepState[1];
+        var errors = errorsState[0], setErrors = errorsState[1];
+        var touched = touchedState[0], setTouched = touchedState[1];
+
+        var validateField = function(field, value) {
+          var err = '';
+          if (field === 'name') {
+            if (!value.trim()) err = 'Name is required';
+            else if (value.trim().length < 2) err = 'Name must be at least 2 characters';
+          } else if (field === 'email') {
+            if (!value) err = 'Email is required';
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) err = 'Enter a valid email';
+          } else if (field === 'password') {
+            if (!value) err = 'Password is required';
+            else if (value.length < 8) err = 'Password must be at least 8 characters';
+          } else if (field === 'mobile') {
+            if (value && !/^\+?[\d\s\-()]{7,}$/.test(value)) err = 'Enter a valid phone number';
+          }
+          setErrors(function(prev) { var n = Object.assign({}, prev); n[field] = err; return n; });
+          return !err;
+        };
+
+        var handleBlur = function(field) {
+          setTouched(function(prev) { var n = Object.assign({}, prev); n[field] = true; return n; });
+          var value = field === 'name' ? name : field === 'email' ? email : field === 'password' ? pw : field === 'mobile' ? mobile : '';
+          validateField(field, value);
+          if (field === 'password' && cpw) {
+            setCErr(cpw !== pw ? 'Passwords do not match' : '');
+          }
+        };
+
+        var handleNext = function() {
+          var fields = step === 1 ? ['name', 'email'] : ['password'];
+          var valid = true;
+          for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            setTouched(function(prev) { var n = Object.assign({}, prev); n[f] = true; return n; });
+            var v = f === 'name' ? name : f === 'email' ? email : pw;
+            if (!validateField(f, v)) valid = false;
+          }
+          if (step === 2 && cpw !== pw) {
+            setCErr('Passwords do not match');
+            valid = false;
+          }
+          if (valid) setStep(step + 1);
+        };
+
+        var handleBack = function() {
+          if (step > 1) setStep(step - 1);
+        };
+
+        var handleSubmit = function() {
+          var allFields = ['name', 'email', 'password'];
+          var allValid = true;
+          for (var i = 0; i < allFields.length; i++) {
+            var f = allFields[i];
+            setTouched(function(prev) { var n = Object.assign({}, prev); n[f] = true; return n; });
+            var v = f === 'name' ? name : f === 'email' ? email : pw;
+            if (!validateField(f, v)) allValid = false;
+          }
+          if (cpw !== pw) {
+            setCErr('Passwords do not match');
+            allValid = false;
+          }
+          if (!allValid) return;
+
+          setState({ loading: true, error: '', success: '' });
+
+          var s = skills.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+          var app = window.APP;
+          if (!app) { setState({ loading: false, error: 'App not ready yet.' }); return; }
+
+          app.apiFetch('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: name.trim(),
+              email: email.trim(),
+              password: pw,
+              skills: s,
+              college: college.trim() || undefined,
+              course: course.trim() || undefined,
+              year: year.trim() || undefined,
+              mobile: mobile.trim() || undefined,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+              whatsappNumber: mobile.trim() || undefined,
+              whatsappOptIn: wa
+            })
+          }).then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+              if (errData.details && errData.details.fieldErrors && errData.details.fieldErrors.email) {
+                setErrors(function(prev) { var n = Object.assign({}, prev); n.email = 'This email is already registered'; return n; });
+              }
+              throw new Error(errData.error || 'Registration failed. Please try again.');
+            });
+          }).then(function(data) {
+            app.setAuth(data.token, data.user);
+            return app.syncToServer().then(function() {
+              return app.refreshCommunityNotes();
+            }).then(function() {
+              app.updateXPUI();
+              app.renderChatSidebar();
+              app.renderExamGenerator();
+              setState({ success: 'Account created! Redirecting...' });
+              setTimeout(function() {
+                app.showPage('dashboard');
+                app.showToast('Welcome, ' + app.userName + '!');
+              }, 800);
+            });
+          }).catch(function(err) {
+            setState({ error: err.message || 'Network error. Check your connection.', loading: false });
+          });
+        };
+
+        var handleKeyDown = function(ev) {
+          if (ev.key === 'Enter') {
+            if (step < 3) handleNext();
+            else handleSubmit();
+          }
+        };
+
+        var inputStyle = function(field) {
+          return errors[field] && touched[field] ? { borderColor: 'rgba(239,68,68,0.5)' } : {};
+        };
+
+        var fieldError = function(field) {
+          if (!errors[field] || !touched[field]) return null;
+          return e('p', { style: { fontSize: '0.72rem', color: '#f87171', marginTop: '0.35rem' } }, errors[field]);
+        };
+
+        /* Step indicator */
+        var stepLabels = ['Account', 'Security', 'Profile'];
+        var stepIndicators = stepLabels.map(function(label, i) {
+          var stepNum = i + 1;
+          var isActive = stepNum === step;
+          var isDone = stepNum < step;
+          var bg = isDone ? 'linear-gradient(120deg, #10b981, #22d3ee)' : isActive ? 'linear-gradient(120deg, #818cf8, #38bdf8)' : 'rgba(148,163,184,0.2)';
+          var color = isDone || isActive ? 'white' : 'rgba(148,163,184,0.6)';
+          var textColor = isActive ? '#e0e7ff' : 'rgba(148,163,184,0.6)';
+          var fontWeight = isActive ? 600 : 400;
+          var inner = isDone ? e('i', { className: 'fas fa-check' }) : stepNum;
+          var connector = i < stepLabels.length - 1 ? e('div', {
+            style: { width: '24px', height: '1px', background: stepNum < step ? 'rgba(16,185,129,0.5)' : 'rgba(148,163,184,0.2)', margin: '0 0.2rem' }
+          }) : null;
+          return e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: '0.4rem' } },
+            e('div', { style: { width: '24px', height: '24px', borderRadius: '999px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, background: bg, color: color, transition: 'all 0.3s ease' } }, inner),
+            e('span', { style: { fontSize: '0.72rem', color: textColor, fontWeight: fontWeight } }, label),
+            connector
+          );
+        });
+
+        /* Step 1: Account */
+        var step1Content = e('div', { className: 'auth-fields' },
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-name' }, 'Full name'),
+            e('input', { id: 'signup-name', className: 'auth-input', placeholder: 'Jamie Doe', value: name, onChange: function(ev) { setName(ev.target.value); }, onBlur: function() { handleBlur('name'); }, style: inputStyle('name'), autoComplete: 'name' }),
+            fieldError('name')
+          ),
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-email' }, 'Email'),
+            e('input', { id: 'signup-email', type: 'email', className: 'auth-input', placeholder: 'you@studylonger.ai', value: email, onChange: function(ev) { setEmail(ev.target.value); }, onBlur: function() { handleBlur('email'); }, style: inputStyle('email'), autoComplete: 'email' }),
+            fieldError('email')
+          )
+        );
+
+        /* Step 2: Security */
+        var pwdEyeIcon = state.showPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+        var cpwdEyeIcon = state.showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+
+        var step2Content = e('div', { className: 'auth-fields' },
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-password' }, 'Password'),
+            e('div', { style: { position: 'relative' } },
+              e('input', { id: 'signup-password', type: state.showPassword ? 'text' : 'password', className: 'auth-input', placeholder: 'Create a password', value: pw, onChange: function(ev) { setPw(ev.target.value); }, onBlur: function() { handleBlur('password'); }, style: Object.assign({ paddingRight: '2.8rem' }, inputStyle('password')), autoComplete: 'new-password' }),
+              e('button', { type: 'button', onClick: function() { setState({ showPassword: !state.showPassword }); }, style: { position: 'absolute', right: '0.8rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(148,163,184,0.8)', cursor: 'pointer', padding: '0.2rem', fontSize: '0.9rem' } }, e('i', { className: pwdEyeIcon }))
+            ),
+            fieldError('password'),
+            pw ? e(PasswordStrengthBar, { password: pw }) : null
+          ),
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-confirm-password' }, 'Confirm password'),
+            e('div', { style: { position: 'relative' } },
+              e('input', { id: 'signup-confirm-password', type: state.showConfirmPassword ? 'text' : 'password', className: 'auth-input', placeholder: 'Confirm your password', value: cpw, onChange: function(ev) { var v = ev.target.value; setCpw(v); setCErr(v && v !== pw ? 'Passwords do not match' : ''); }, style: Object.assign({ paddingRight: '2.8rem' }, inputStyle('confirmPassword')), autoComplete: 'new-password' }),
+              e('button', { type: 'button', onClick: function() { setState({ showConfirmPassword: !state.showConfirmPassword }); }, style: { position: 'absolute', right: '0.8rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(148,163,184,0.8)', cursor: 'pointer', padding: '0.2rem', fontSize: '0.9rem' } }, e('i', { className: cpwdEyeIcon }))
+            ),
+            cErr ? e('p', { style: { fontSize: '0.72rem', color: '#f87171', marginTop: '0.35rem' } }, cErr) : null
+          )
+        );
+
+        /* Step 3: Profile */
+        var step3Content = e('div', { className: 'auth-fields' },
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-skills' }, 'Skills (comma separated)'),
+            e('input', { id: 'signup-skills', className: 'auth-input', placeholder: 'Focus, Math, Writing', value: skills, onChange: function(ev) { setSkills(ev.target.value); } })
+          ),
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-college' }, 'College / University'),
+            e('input', { id: 'signup-college', className: 'auth-input', placeholder: 'Your institution', value: college, onChange: function(ev) { setCollege(ev.target.value); } })
+          ),
+          e('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' } },
+            e('div', null,
+              e('label', { className: 'auth-label', htmlFor: 'signup-course' }, 'Course'),
+              e('input', { id: 'signup-course', className: 'auth-input', placeholder: 'CS50, MATH101', value: course, onChange: function(ev) { setCourse(ev.target.value); } })
+            ),
+            e('div', null,
+              e('label', { className: 'auth-label', htmlFor: 'signup-year' }, 'Year'),
+              e('input', { id: 'signup-year', className: 'auth-input', placeholder: '2nd, 2026', value: year, onChange: function(ev) { setYear(ev.target.value); } })
+            )
+          ),
+          e('div', null,
+            e('label', { className: 'auth-label', htmlFor: 'signup-mobile' }, 'Mobile number (optional)'),
+            e('input', { id: 'signup-mobile', className: 'auth-input', placeholder: '+1 555 123 4567', value: mobile, onChange: function(ev) { setMobile(ev.target.value); }, onBlur: function() { handleBlur('mobile'); }, style: inputStyle('mobile') }),
+            fieldError('mobile')
+          ),
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.8rem', borderRadius: '0.8rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' } },
+            e('input', { type: 'checkbox', id: 'signup-whatsapp-optin', checked: !!wa, onChange: function() { setWa(!wa); }, style: { accentColor: '#6366f1' } }),
+            e('label', { htmlFor: 'signup-whatsapp-optin', style: { fontSize: '0.8rem', color: 'rgba(226,232,240,0.8)', cursor: 'pointer' } }, 'Enable WhatsApp reminders and digests')
+          )
+        );
+
+        var submitText = state.loading ? 'Creating account...' : (step < 3 ? 'Continue' : 'Sign Up');
+
+        return e(AuthShell, null,
+          e('div', { className: 'auth-header' },
+            e('div', { className: 'auth-badge green' }, e('i', { className: 'fas fa-user-plus' }), 'New Profile'),
+            e('h3', { className: 'auth-title' }, 'Create your account'),
+            e('p', { className: 'auth-subtitle' }, 'Build a StudyLonger profile in minutes.')
+          ),
+          e('div', { style: { display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.2rem' } }, stepIndicators),
+          step === 1 ? step1Content : null,
+          step === 2 ? step2Content : null,
+          step === 3 ? step3Content : null,
+          state.error ? ErrorBanner(state.error) : null,
+          state.success ? SuccessBanner(state.success) : null,
+          e('div', { style: { display: 'flex', gap: '0.6rem', marginTop: '1.4rem' } },
+            step > 1 ? e('button', { onClick: handleBack, onKeyDown: handleKeyDown, disabled: state.loading, style: { flex: 1, padding: '0.95rem 1rem', borderRadius: '1.1rem', fontWeight: 700, letterSpacing: '0.02em', color: '#e2e8f0', background: 'rgba(148,163,184,0.15)', border: '1px solid rgba(148,163,184,0.3)', cursor: state.loading ? 'not-allowed' : 'pointer', opacity: state.loading ? 0.5 : 1 } }, 'Back') : null,
+            e('button', { className: step < 3 ? 'auth-submit auth-primary' : 'auth-submit auth-secondary', onClick: step < 3 ? handleNext : handleSubmit, onKeyDown: handleKeyDown, disabled: state.loading, style: state.loading ? { opacity: 0.7, cursor: 'not-allowed' } : {} },
+              state.loading ? e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem' } }, e('i', { className: 'fas fa-circle-notch fa-spin' }), submitText) : submitText
+            )
+          ),
+          e('div', { className: 'auth-meta' },
+            e('span', null, 'Already have an account?'),
+            e('button', { className: 'auth-link', onClick: function() { var a = window.APP; if (a) a.showPage('signin'); } }, 'Sign in')
+          )
+        );
+      };
+
+      /* ===== Mount ===== */
+      var rootEl = document.getElementById('app-loader');
+      if (rootEl) ReactDOM.createRoot(rootEl).render(e(Loader));
+
+      var signinRoot = document.getElementById('signin-react-root');
+      if (signinRoot) ReactDOM.createRoot(signinRoot).render(e(SignIn));
+
+      var signupRoot = document.getElementById('signup-react-root');
+      if (signupRoot) ReactDOM.createRoot(signupRoot).render(e(SignUp));
+    })();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
